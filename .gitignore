@@ -2,3 +2,6 @@ dota/details.json
 dota/history.json
 __pycache__/
 *.pyc
+build/
+dist/
+dota.egg-info/
