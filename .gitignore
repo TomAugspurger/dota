@@ -6,3 +6,6 @@ build/
 dist/
 dota.egg-info/
 .key
+examples/.ipynb_checkpoints/
+examples/*.json
+examples/*.csv

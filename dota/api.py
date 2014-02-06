@@ -24,6 +24,9 @@ def get_history(steam_id):
     r = requests.get(HISTORY_URL.format(key=KEY, steam_id=steam_id))
     return r.json()['result']
 
+def id_64(id_32):
+    return id_32 + 76561197960265728
+
 # MYSTEAMID = "76561198025007092"
 # LAST_MATCH_ID = "478948089"
 #-----------------------------------------------------------------------------
@@ -52,6 +55,35 @@ class API:
         self.key = key
 
     def get_match_history(self, **kwargs):
+        """
+
+        Parameters
+        -----------------
+        player_name: str
+            Search matches with a player name, exact match only
+        hero_id: str
+            Search for matches with a specific hero being played (hero ID, not name, see HEROES below)
+        game_mode: int
+            Search for matches of a given mode (see below)
+        skill: int
+            0 for any, 1 for normal, 2 for high, 3 for very high skill (default is 0)
+        date_min: int UTC
+            date in UTC seconds since Jan 1, 1970 (unix time format)
+        date_max: int UTC
+            date in UTC seconds since Jan 1, 1970 (unix time format)
+        min_players: int
+            the minimum number of players required in the match
+        account_id: int
+            Search for all matches for the given user (32-bit or 64-bit steam ID)
+        league_id: int
+            matches for a particular league
+        start_at_match_id: int
+            Start the search at the indicated match id, descending
+        matches_requested: int
+            Maximum is 25 matches (default is 25)
+        tournament_games_only:
+            set to only show tournament games
+        """
         kwargs['key'] = self.key
         r = requests.get(self.HISTORY_URL, params=kwargs)
         return r.json()['result']
@@ -73,6 +105,28 @@ class API:
     def get_full_history(self, account_id):
         pass
 
+    def parse_match_history(self, history):
+        return [self.parse_match(match) for match in history['matches']]
+
+    @staticmethod
+    def parse_match(match):
+        pass
+
+    @staticmethod
+    def player_counts(history):
+        ids = []
+        for match in history['matches']:
+            for player in match['players']:
+                ids.append(player['account_id'])
+        s = pd.Series(ids)
+        s = s.replace(4294967295, np.nan)  # private profiles.
+        return pd.value_counts(s)
+
+    # @staticmethod
+    # def match_ids(history):
+    #     return [match['match_id'] for match in history['matches']]
+
+
 class Response:
     """
     The local side.
@@ -82,7 +136,7 @@ class Response:
 
 class HistoryResponse(Response):
 
-    def __init__(self, resp):
+    def __init__(self, resp, helper=None):
 
         self.status = resp['status']
         self.results_remaining = resp['results_remaining']
@@ -91,12 +145,36 @@ class HistoryResponse(Response):
         self.matches = resp['matches']
 
         self.match_ids = [match['match_id'] for match in self.matches]
+        self.helper = helper
+
+    def get_all_match_details(self):
+
+        import time
+        details = {}
+        N = len(self.match_ids)
+
+        if self.helper is None:
+            raise ValueError("Need to start an API object")
+
+        for i, match in enumerate(self.match_ids):
+            details[match] = self.helper.get_match_details(match)
+            time.sleep(.9)  # rate limiting
+            if round((i / N) * 100) % 10 == 0:
+                print("Added {} ({}%)".format(match, i / N))
+
+        responses = {k: DetailsResponse(v) for k, v in details.iteritems()}
+        return responses
+
 
 class DetailsResponse(Response):
 
     def __init__(self, resp):
 
         self.resp = resp
+        if resp['radiant_win']:
+            self.winner = 'Radiant'
+        else:
+            self.winner = 'Dire'
         self.match_id = resp['match_id']
         self.player_ids = [player['account_id'] for player in resp['players']]
         self.hero_id_to_names = self.get_hero_names()
@@ -117,10 +195,26 @@ class DetailsResponse(Response):
 
     def get_match_report(self):
         keys = ['kills', 'deaths', 'assists',
-                'last_hits', 'denies', 'gold']
+                'last_hits', 'denies', 'gold', 'player_slot',
+                'account_id']
         df = pd.concat([pd.Series(self.get_by_player(key))
                         for key in keys], axis=1, keys=keys)
-        df = df.rename(index=lambda x: self.hero_id_to_names[str(x)])
+        df['match_id'] = self.match_id
+        df = df.rename(index=lambda x: self.hero_id_to_names.get(str(x), str(x)))
+        df.index.set_names(['hero'], inplace=True)
+        df = df.reset_index().set_index(['match_id', 'hero'])
+
+        df = df.rename(columns={'player_slot': 'team'})
+        
+        def rep_team(x):
+            if x < 5:
+                return 'Radiant'
+            else:
+                return 'Dire'
+
+        df['team'] = df['team'].apply(rep_team)
+        df['win'] = df['team'] == self.winner
+
         return df
 
     def get_hero_names(self):
