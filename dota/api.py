@@ -110,9 +110,18 @@ class API:
                                       date_max=now.strftime('%s'))
 
         """
+        # inpsect query so you can finish out the results.
+        self.query = kwargs
         kwargs['key'] = self.key
         r = requests.get(self.HISTORY_URL, params=kwargs)
-        return HistoryResponse(r.json()['result'], helper=self)
+        hist = HistoryResponse(r.json()['result'], helper=self)
+        while hist.results_remaining > 0:
+            new_kwargs = kwargs.copy()
+            new_date_max = min([m['start_time'] for m in hist.matches]) - 1
+            new_kwargs['date_max'] = 2
+            r = requests.get(self.HISTORY_URL, params=new_kwargs)
+            hist += HistoryResponse(r.json()['result'], helper=self)
+        return hist
 
     def get_match_details(self, match_id, **kwargs):
         kwargs['key'] = self.key
@@ -173,6 +182,19 @@ class HistoryResponse(Response):
         self.match_ids = [match['match_id'] for match in self.matches]
         self.helper = helper
         self.resp = resp
+
+    def __add__(self, other):
+        """
+        other : HistoryResponse
+
+        Updates results results_remaining. Appends matches. Any verification?
+        """
+        self.matches.append(other.matches)
+        self.results_remaining = other.results_remaining # needs to not be inplace
+        self.num_results += other.num_results
+        self.match_ids = [match['match_id'] for match in self.matches]
+        # self.resp is outdated now :/
+        return self
 
     def get_all_match_details(self, helper=None):
 
