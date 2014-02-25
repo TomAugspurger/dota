@@ -61,17 +61,17 @@ setup(
         'Programming Language :: Python :: 3.3',
     ],
 
-    install_requires = ['pandas', 'numpy', 'requests'],
 
     # What does your project relate to?
     keywords='dota dota2 statistics',
 
+    install_requires = ['pandas', 'numpy', 'requests'],
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages.
     packages=find_packages(exclude=["contrib", "docs", "tests*"]),
     # If there are data files included in your packages, specify them here.
     package_data={
-        'dota': ['dota/*.json'],
+        'dota': ['*.json', '*.txt'],
     },
 
     # To provide executable scripts, use entry points in preference to the
