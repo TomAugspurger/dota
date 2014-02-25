@@ -11,3 +11,4 @@ examples/*.json
 examples/*.csv
 
 .ipynb_checkpoints/
+.pypirc
