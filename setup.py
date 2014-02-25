@@ -61,6 +61,8 @@ setup(
         'Programming Language :: Python :: 3.3',
     ],
 
+    install_requires = ['pandas', 'numpy', 'requests'],
+
     # What does your project relate to?
     keywords='dota dota2 statistics',
 
