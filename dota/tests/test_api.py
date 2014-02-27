@@ -18,6 +18,15 @@ class TestHistoryResponse(unittest.TestCase):
     def test_player_counts(self):
         pass
 
+    def test_add(self):
+        result = self.hr + self.hr
+        self.assertEqual(len(result.match_ids), 2 * len(self.hr.match_ids))
+        self.assertEqual(result.total_results, self.hr.total_results)
+        self.assertEqual(result.status, self.hr.status)
+
+    def test_len(self):
+        self.assertEqual(len(self.hr), len(self.hr.match_ids))
+
 
 class TestDetailsResponse(unittest.TestCase):
 

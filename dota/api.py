@@ -110,9 +110,20 @@ class API:
                                       date_max=now.strftime('%s'))
 
         """
+        # inpsect query so you can finish out the results.
+        self.query = kwargs
         kwargs['key'] = self.key
         r = requests.get(self.HISTORY_URL, params=kwargs)
-        return HistoryResponse(r.json()['result'], helper=self)
+        hist = HistoryResponse(r.json()['result'], helper=self)
+        # at time of implementation the date_min/max kwargs are browken
+        # using start_at_match_id as a workaround
+        while hist.results_remaining > 0:
+            new_kwargs = kwargs.copy()
+            new_start_match_id = min([m['match_id'] for m in hist.matches]) - 1
+            new_kwargs['start_at_match_id'] = new_start_match_id
+            r = requests.get(self.HISTORY_URL, params=new_kwargs)
+            hist += HistoryResponse(r.json()['result'], helper=self)
+        return hist
 
     def get_match_details(self, match_id, **kwargs):
         kwargs['key'] = self.key
@@ -174,6 +185,46 @@ class HistoryResponse(Response):
         self.helper = helper
         self.resp = resp
 
+    def __add__(self, other):
+        """
+        Parameters
+        ----------
+
+        other : HistoryResponse
+
+        Returns
+        -------
+
+        resp : HistoryResponse
+
+        If ``other`` is an exhaustion of self then the total results and
+        results remaing attributes are propogated to the retuern HistoryResponse.
+        That's determined by the total results equaling (which is not
+        foolproof).
+
+        """
+        resp1 = self.resp
+        resp2 = other.resp
+
+        resp = {}
+        resp['num_results'] = len(self) + len(other)
+        try:
+            assert resp1['total_results'] == resp2['total_results']
+            resp['results_remaining'] = min(resp1['results_remaining'],
+                                            resp2['results_remaining'])
+            resp['total_results'] = resp1['total_results']
+        except AssertionError:
+            resp['results_remaining'] = np.nan
+            resp['total_results'] = np.nan
+        resp['matches'] = resp1['matches'] + resp2['matches']
+        resp['status'] = max(resp1['status'], resp2['status'])
+
+        helper = self.helper or other.helper
+        return HistoryResponse(resp, helper=helper)
+
+    def __len__(self):
+        return len(self.match_ids)
+
     def get_all_match_details(self, helper=None):
 
         import time
@@ -188,9 +239,9 @@ class HistoryResponse(Response):
             time.sleep(.9)  # rate limiting
             # TODO: progress bar
             if round((i / N) * 100) % 10 == 0:
-                print("Added {} ({}%)".format(match, 10 * i / N))
+                print("\rAdded {} ({}%)".format(match, 100 * i / N))
 
-        responses = {k: DetailsResponse(v) for k, v in details.iteritems()}
+        responses = {k: DetailsResponse(v) for k, v in details.items()}
         return responses
 
     def _check_helper(self, helper=None):
@@ -257,7 +308,6 @@ class DetailsResponse(Response):
         df = df.sort('team', ascending=False)
 
         df = df.reset_index().set_index(['match_id', 'team', 'hero'])
-        df = df.rename(columns={'player_slot': 'team'})
 
         return df
 

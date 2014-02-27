@@ -9,6 +9,7 @@ dota.egg-info/
 examples/.ipynb_checkpoints/
 examples/*.json
 examples/*.csv
+examples/details/
 
 .ipynb_checkpoints/
 .pypirc
