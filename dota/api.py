@@ -4,6 +4,7 @@ import itertools as it
 
 import json
 import requests
+from requests.exceptions import HTTPError
 import pandas as pd
 import numpy as np
 
@@ -129,6 +130,8 @@ class API:
         kwargs['key'] = self.key
         kwargs['match_id'] = match_id
         r = requests.get(self.MATCH_URL, params=kwargs)
+        if r.status_code == 503:
+            raise HTTPError
         return r.json()['result']
 
     def get_heros(self):
@@ -235,8 +238,12 @@ class HistoryResponse(Response):
         self._check_helper(helper=helper)
 
         for i, match in enumerate(self.match_ids):
-            details[match] = helper.get_match_details(match)
-            time.sleep(.1)  # rate limiting
+            try:
+                details[match] = helper.get_match_details(match)
+            except HTTPError:
+                import warnings
+                warnings.warn("HTTPError on {}".format(match))
+            time.sleep(.25)  # rate limiting
             # TODO: progress bar
             if round((i / N) * 100) % 10 == 0:
                 print("\rAdded {} ({}%)".format(match, 100 * i / N))
@@ -268,7 +275,7 @@ class DetailsResponse(Response):
         else:
             self.winner = 'Dire'
         self.match_id = resp['match_id']
-        self.player_ids = [player['account_id'] for player in resp['players']]
+        self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
         self.hero_id_to_names = _HERO_NAMES
 
     def get_by_player(self, key):
@@ -282,7 +289,7 @@ class DetailsResponse(Response):
 
         """
         # account id isn't nesc unique.
-        return {player['hero_id']: player[key]
+        return {player['hero_id']: player.get(key)
                 for player in self.resp['players']}
 
     def get_match_report(self):
@@ -314,24 +321,3 @@ class DetailsResponse(Response):
     def get_team(self):
         pass
 
-
-if __name__ == "__main__":
-    with open('/Users/admin/Dropbox/bin/api-keys.txt', 'r') as f:
-        api_keys = json.load(f)
-
-    KEY = api_keys['steam']
-
-    HISTORY_URL = ("https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/"
-                   "V001/?key={key}&account_id={account_id}")
-    MATCH_URL = ("https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/"
-                 "V001/?match_id={match_id}&key={key}")
-
-    r = requests.get(HISTORY_URL.format(key=KEY, player_name='Auggie'))
-    r = requests.get(MATCH_URL.format(key=KEY, match_id="478948089"))
-    j = r.json()
-
-    all_players = []
-    for m in j['result']['matches']:
-        all_players.append(get_players(m))
-
-    df = pd.Series(list(flatten(all_players)))
