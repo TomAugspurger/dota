@@ -236,7 +236,7 @@ class HistoryResponse(Response):
 
         for i, match in enumerate(self.match_ids):
             details[match] = helper.get_match_details(match)
-            time.sleep(.9)  # rate limiting
+            time.sleep(.1)  # rate limiting
             # TODO: progress bar
             if round((i / N) * 100) % 10 == 0:
                 print("\rAdded {} ({}%)".format(match, 100 * i / N))
@@ -310,12 +310,6 @@ class DetailsResponse(Response):
         df = df.reset_index().set_index(['match_id', 'team', 'hero'])
 
         return df
-
-    def get_hero_names(self):
-        with open('hero_names.json') as f:
-            names = json.load(f)
-
-        return names
 
     def get_team(self):
         pass
