@@ -115,10 +115,12 @@ class API:
         kwargs['key'] = self.key
         r = requests.get(self.HISTORY_URL, params=kwargs)
         hist = HistoryResponse(r.json()['result'], helper=self)
+        # at time of implementation the date_min/max kwargs are browken
+        # using start_at_match_id as a workaround
         while hist.results_remaining > 0:
             new_kwargs = kwargs.copy()
-            new_date_max = min([m['start_time'] for m in hist.matches]) - 1
-            new_kwargs['date_max'] = 2
+            new_start_match_id = min([m['match_id'] for m in hist.matches]) - 1
+            new_kwargs['start_at_match_id'] = new_start_match_id
             r = requests.get(self.HISTORY_URL, params=new_kwargs)
             hist += HistoryResponse(r.json()['result'], helper=self)
         return hist
@@ -185,16 +187,42 @@ class HistoryResponse(Response):
 
     def __add__(self, other):
         """
+        Parameters
+        ----------
+
         other : HistoryResponse
 
-        Updates results results_remaining. Appends matches. Any verification?
+        Returns
+        -------
+
+        resp : HistoryResponse
+
+        If ``other`` is an exhaustion of self then the total results and
+        results remaing attributes are propogated to the retuern HistoryResponse.
+        That's determined by the total results equaling (which is not
+        foolproof).
+
         """
-        self.matches.append(other.matches)
-        self.results_remaining = other.results_remaining # needs to not be inplace
-        self.num_results += other.num_results
-        self.match_ids = [match['match_id'] for match in self.matches]
-        # self.resp is outdated now :/
-        return self
+        resp1 = self.resp
+        resp2 = other.resp
+
+        resp = {}
+        resp['num_results'] = len(self) + len(other)
+        try:
+            assert resp1['total_results'] == resp2['total_results']
+            resp['results_remaining'] = min(resp1['results_remaining'],
+                                            resp2['results_remaining'])
+            resp['total_results'] = resp1['total_results']
+        except AssertionError:
+            resp['results_remaining'] = np.nan
+            resp['total_results'] = np.nan
+        resp['matches'] = resp1['matches'] + resp2['matches']
+        resp['status'] = max(resp1['status'], resp2['status'])
+
+        return HistoryResponse(resp)
+
+    def __len__(self):
+        return len(self.match_ids)
 
     def get_all_match_details(self, helper=None):
 
