@@ -308,7 +308,6 @@ class DetailsResponse(Response):
         df = df.sort('team', ascending=False)
 
         df = df.reset_index().set_index(['match_id', 'team', 'hero'])
-        df = df.rename(columns={'player_slot': 'team'})
 
         return df
 
