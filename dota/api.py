@@ -219,7 +219,8 @@ class HistoryResponse(Response):
         resp['matches'] = resp1['matches'] + resp2['matches']
         resp['status'] = max(resp1['status'], resp2['status'])
 
-        return HistoryResponse(resp)
+        helper = self.helper or other.helper
+        return HistoryResponse(resp, helper=helper)
 
     def __len__(self):
         return len(self.match_ids)
@@ -238,9 +239,9 @@ class HistoryResponse(Response):
             time.sleep(.9)  # rate limiting
             # TODO: progress bar
             if round((i / N) * 100) % 10 == 0:
-                print("Added {} ({}%)".format(match, 10 * i / N))
+                print("\rAdded {} ({}%)".format(match, 100 * i / N))
 
-        responses = {k: DetailsResponse(v) for k, v in details.iteritems()}
+        responses = {k: DetailsResponse(v) for k, v in details.items()}
         return responses
 
     def _check_helper(self, helper=None):
