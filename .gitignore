@@ -4,6 +4,7 @@ __pycache__/
 *.pyc
 build/
 dist/
+data/
 dota.egg-info/
 .key
 examples/.ipynb_checkpoints/
@@ -13,3 +14,5 @@ examples/details/
 
 .ipynb_checkpoints/
 .pypirc
+
+*~
