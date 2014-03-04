@@ -120,7 +120,8 @@ class API:
         hist = HistoryResponse(r.json()['result'], helper=self)
         # at time of implementation the date_min/max kwargs are browken
         # using start_at_match_id as a workaround
-        while hist.results_remaining > 0:
+        while (hist.results_remaining > 0 and
+               kwargs.get('matches_requested') is None):
             new_kwargs = kwargs.copy()
             new_start_match_id = min([m['match_id'] for m in hist.matches]) - 1
             new_kwargs['start_at_match_id'] = new_start_match_id
@@ -134,7 +135,7 @@ class API:
         r = requests.get(self.MATCH_URL, params=kwargs)
         if r.status_code == 503:
             raise HTTPError
-        return r.json()['result']
+        return DetailsResponse(r.json()['result'])
 
     def get_heros(self):
         url = "https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v0001/"
@@ -257,7 +258,7 @@ class HistoryResponse(Response):
         if helper is None and self.helper is None:
             raise ValueError("Need to start an API object")
 
-    def get_partners(self):
+    def partner_counts(self):
         cts = []
         for match in self.matches:
             for player in match['players']:
@@ -283,7 +284,7 @@ class DetailsResponse(Response):
         self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
         self.hero_id_to_names = _HERO_NAMES
 
-    def get_by_player(self, key):
+    def by_player(self, key):
         """
         valid keys: {'kills', 'hero_id', 'player_slot', 'gold', 'gold_per_min',
                      'last_hits', 'ability_upgrades', 'level', 'hero_healing',
@@ -297,13 +298,13 @@ class DetailsResponse(Response):
         return {player['hero_id']: player.get(key)
                 for player in self.resp['players']}
 
-    def get_match_report(self):
+    def match_report(self):
         # TODO: ability upgrades
         keys = ['level', 'kills', 'deaths', 'assists',
                 'last_hits', 'denies', 'gold', 'gold_spent', 'player_slot',
                 'account_id', 'item_0', 'item_1', 'item_2', 'item_3', 'item_4',
                 'item_5']
-        df = pd.concat([pd.Series(self.get_by_player(key))
+        df = pd.concat([pd.Series(self.by_player(key))
                         for key in keys], axis=1, keys=keys)
         df['match_id'] = self.match_id
         df = df.rename(index=lambda x: self.hero_id_to_names.get(str(x), str(x)))
@@ -322,7 +323,4 @@ class DetailsResponse(Response):
         df = df.reset_index().set_index(['match_id', 'team', 'hero'])
 
         return df
-
-    def get_team(self):
-        pass
 

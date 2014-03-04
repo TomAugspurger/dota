@@ -7,6 +7,7 @@ dist/
 data/
 dota.egg-info/
 .key
+dota/tests/.key.json
 examples/.ipynb_checkpoints/
 examples/*.json
 examples/*.csv
