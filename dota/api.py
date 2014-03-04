@@ -14,6 +14,8 @@ with open(dirname(abspath(__file__)) + "/hero_names.json") as f:
     _HERO_NAMES = json.load(f)
 
 
+_PRIVATE = 4294967295  # privacy option in client
+
 def get_players(m):
     """
     m : match
@@ -275,6 +277,9 @@ class DetailsResponse(Response):
         else:
             self.winner = 'Dire'
         self.match_id = resp['match_id']
+        for p in resp['players']:
+            if p.get('account_id') == _PRIVATE:
+                p['account_id'] = np.nan
         self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
         self.hero_id_to_names = _HERO_NAMES
 
