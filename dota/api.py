@@ -1,8 +1,9 @@
 from __future__ import division
 
 import itertools as it
-
 import json
+
+import arrow
 import requests
 from requests.exceptions import HTTPError
 import pandas as pd
@@ -120,7 +121,8 @@ class API:
         hist = HistoryResponse(r.json()['result'], helper=self)
         # at time of implementation the date_min/max kwargs are browken
         # using start_at_match_id as a workaround
-        while hist.results_remaining > 0:
+        while (hist.results_remaining > 0 and
+               kwargs.get('matches_requested') is None):
             new_kwargs = kwargs.copy()
             new_start_match_id = min([m['match_id'] for m in hist.matches]) - 1
             new_kwargs['start_at_match_id'] = new_start_match_id
@@ -134,7 +136,7 @@ class API:
         r = requests.get(self.MATCH_URL, params=kwargs)
         if r.status_code == 503:
             raise HTTPError
-        return r.json()['result']
+        return DetailsResponse(r.json()['result'])
 
     def get_heros(self):
         url = "https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v0001/"
@@ -250,14 +252,14 @@ class HistoryResponse(Response):
             if round((i / N) * 100) % 10 == 0:
                 print("\rAdded {} ({}%)".format(match, 100 * i / N))
 
-        responses = {k: DetailsResponse(v) for k, v in details.items()}
+        responses = {k: v for k, v in details.items()}
         return responses
 
     def _check_helper(self, helper=None):
         if helper is None and self.helper is None:
             raise ValueError("Need to start an API object")
 
-    def get_partners(self):
+    def partner_counts(self):
         cts = []
         for match in self.matches:
             for player in match['players']:
@@ -283,7 +285,16 @@ class DetailsResponse(Response):
         self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
         self.hero_id_to_names = _HERO_NAMES
 
-    def get_by_player(self, key):
+        self.negative_votes = self.resp['negative_votes']
+        self.positive_votes = self.resp['positive_votes']
+        self.lobby_type = self.resp['lobby_type']
+        self.duration = self.resp['duration']
+        self.first_blood_time = self.resp['first_blood_time']
+        self.league_id = self.resp['leagueid']
+        self.start_time = arrow.get(self.resp['start_time'])
+
+
+    def by_player(self, key):
         """
         valid keys: {'kills', 'hero_id', 'player_slot', 'gold', 'gold_per_min',
                      'last_hits', 'ability_upgrades', 'level', 'hero_healing',
@@ -297,13 +308,14 @@ class DetailsResponse(Response):
         return {player['hero_id']: player.get(key)
                 for player in self.resp['players']}
 
-    def get_match_report(self):
+    def match_report(self):
         # TODO: ability upgrades
         keys = ['level', 'kills', 'deaths', 'assists',
                 'last_hits', 'denies', 'gold', 'gold_spent', 'player_slot',
-                'account_id', 'item_0', 'item_1', 'item_2', 'item_3', 'item_4',
+                'account_id', 'hero_damage', 'hero_healing',
+                'item_0', 'item_1', 'item_2', 'item_3', 'item_4',
                 'item_5']
-        df = pd.concat([pd.Series(self.get_by_player(key))
+        df = pd.concat([pd.Series(self.by_player(key))
                         for key in keys], axis=1, keys=keys)
         df['match_id'] = self.match_id
         df = df.rename(index=lambda x: self.hero_id_to_names.get(str(x), str(x)))
@@ -323,6 +335,41 @@ class DetailsResponse(Response):
 
         return df
 
-    def get_team(self):
-        pass
+    def tower_status(self):
+        """
+        http://wiki.teamfortress.com/wiki/WebAPI/GetMatchDetails#Tower_Status
+        """
+        bsr = bin(self.resp['tower_status_radiant'])
+        bsd = bin(self.resp['tower_status_dire'])
 
+        d = {'radiant': bsr, 'dire': bsd}
+        return d
+
+
+    def barracks_status(self, team=None):
+        """
+
+        8-bit unsigned int.
+
+        0 0 0 0 0 0 0 1
+        ^ ^ ^ ^ ^ ^ ^ ^
+        1 2 3 4 5 6 7 8
+
+        1: unused
+        2: unused
+        3: bottom ranged
+        4: bottom melee
+        5: mid ranged
+        6: mid melee
+        7: top ranged
+        8: top melee
+
+        1 is up, 0 is destroyed.
+
+        http://wiki.teamfortress.com/wiki/WebAPI/GetMatchDetails#Barracks_Status
+        """
+        bsr = bin(self.resp['barracks_status_radiant'])
+        bsd = bin(self.resp['barracks_status_dire'])
+
+        d = {'radiant': bsr, 'dire': bsd}
+        return d
