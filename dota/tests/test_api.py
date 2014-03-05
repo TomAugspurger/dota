@@ -1,5 +1,13 @@
+# -*- coding: utf-8 -*-
+
+import os
 import json
 import unittest
+
+try:
+    from io import StringIO
+except ImportError:
+    from StringIO import StringIO
 
 from pandas.util.testing import network
 
@@ -35,6 +43,7 @@ class TestAPI(unittest.TestCase):
         self.assertEqual(d.match_id, MATCH_ID)
         self.assertEqual(d.winner, 'Radient')
 
+
 class TestHistoryResponse(unittest.TestCase):
 
     def setUp(self):
@@ -53,11 +62,22 @@ class TestHistoryResponse(unittest.TestCase):
     def test_len(self):
         self.assertEqual(len(self.hr), len(self.hr.match_ids))
 
+    # def test_to_json(self):
+
+    #     d = {1234: DetailsResponse({'radiant_win': True,
+    #                                 'match_id': 1234,
+    #                                 'players': []})}
+    #     self.hr.update_details(d)
+    #     self.hr.to_json('test_to_json.json')
+    #     with open('test_to_json.json', 'r') as f:
+    #         result = json.load(f)
+    #     expected = {'history': self.hr.resp,
+    #                 'details': d}
+    #     self.assertEqual(result, expected)
+    #     os.remove(test_to_json.json)
 
 class TestDetailsResponse(unittest.TestCase):
 
     def setUp(self):
         with open('details_response.json') as f:
             self.dr = DetailsResponse(json.load(f))
-
-

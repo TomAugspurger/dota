@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 from __future__ import division
 
 import itertools as it
@@ -190,6 +192,7 @@ class HistoryResponse(Response):
         self.match_ids = [match['match_id'] for match in self.matches]
         self.helper = helper
         self.resp = resp
+        self.details = {}
 
     def __add__(self, other):
         """
@@ -254,6 +257,13 @@ class HistoryResponse(Response):
         responses = {k: DetailsResponse(v) for k, v in details.items()}
         return responses
 
+    def update_details(self, responses):
+
+        new_games = [k for k in responses if k in responses.keys() -
+                     self.details.keys()]
+        for k in new_games:
+            self.details[k] = responses[k]
+
     def _check_helper(self, helper=None):
         if helper is None and self.helper is None:
             raise ValueError("Need to start an API object")
@@ -267,8 +277,43 @@ class HistoryResponse(Response):
         cts = cts.replace(4294967295, np.nan)
         return cts.value_counts()
 
+    def to_json(self, filepath=None):
+        """
+        Need to persist history and all details.
+        {
+         history : self.resp,
+         details : {match_id : game.resp}
+        }
+        """
+        obj = {'history': self.resp,
+               'details': {k: v.to_json() for k, v in self.details.items()}
+               }
+        if filepath is None:
+            return json.dumps(obj)
+        else:
+            with open(filepath) as f:
+                json.dump(obj, f)
+
 
 class DetailsResponse(Response):
+    """
+    Detailed response of an individual game.
+
+    Parameters
+    ----------
+
+    resp : dict
+
+    Notes
+    -----
+
+    resp should be a dict returned by the dota2 WebAPI with the following keys:
+
+    'radiant_win': bool
+    'match_id': int
+    'players': array
+
+    """
 
     def __init__(self, resp):
 
@@ -324,3 +369,9 @@ class DetailsResponse(Response):
 
         return df
 
+    def to_json(self, filepath=None):
+        if filepath is None:
+            return json.dumps(self.resp)
+        else:
+            with open(filepath, 'w') as f:
+                json.dump(self.resp, f)
