@@ -389,6 +389,7 @@ class DetailsResponse(Response):
 
         hero : str
 
+        TODO: http://cdn.dota2.com/apps/dota2/images/abilities/antimage_blink_lg.png
         """
         if hero == 'all':
            raise ValueError("Not  Implemented")
