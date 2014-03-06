@@ -15,6 +15,11 @@ with open(dirname(abspath(__file__)) + "/hero_names.json") as f:
     _HERO_NAMES = json.load(f)
 
 
+try:
+    from itertools import filter
+except ImportError:
+    pass
+
 _PRIVATE = 4294967295  # privacy option in client
 
 def get_players(m):
@@ -284,6 +289,7 @@ class DetailsResponse(Response):
                 p['account_id'] = np.nan
         self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
         self.hero_id_to_names = _HERO_NAMES
+        self.hero_name_to_id = {v: k for k, v in _HERO_NAMES.items()}
 
         self.negative_votes = self.resp['negative_votes']
         self.positive_votes = self.resp['positive_votes']
@@ -373,3 +379,25 @@ class DetailsResponse(Response):
 
         d = {'radiant': bsr, 'dire': bsd}
         return d
+
+    def skill_build(self, hero='all'):
+        """
+        Display the skill build as a _.
+
+        Parameters
+        ----------
+
+        hero : str
+
+        """
+        if hero == 'all':
+           raise ValueError("Not  Implemented")
+        else:
+            if not int(hero):
+                hero_id = self.hero_name_to_id[hero]
+            f = lambda x: x['hero_id'] == hero_id
+            # should be unique
+            skills = list(filter(f, self.resp['players']))[0]['ability_upgrades']
+            df = pd.DataFrame(skills)
+            df.set_index(['time'], inplace=True)
+        return df
