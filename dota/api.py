@@ -15,6 +15,7 @@ from os.path import dirname, abspath
 
 with open(dirname(abspath(__file__)) + "/hero_names.json") as f:
     _HERO_NAMES = json.load(f)
+    _HERO_NAMES = {x['name']: x['id'] for x in _HERO_NAMES['heroes']}
 
 
 try:
