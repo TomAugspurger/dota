@@ -185,10 +185,10 @@ class HistoryResponse(Response):
         self.match_ids = [match['match_id'] for match in resp['matches']]
         self.helper = helper
         self.resp = resp
-        self._init_details(self)
+        self._init_details()
 
     def _init_details(self):
-
+        pass
 
     def __add__(self, other):
         """
@@ -269,10 +269,11 @@ class HistoryResponse(Response):
         """
 
         if isinstance(details, DetailsResponse):
-            new = self._add_detail(self, details)
+            new = self._add_detail(details)
         else:
-            for x in self:
+            for x in self.matches:
                 pass
+        return new
 
     def _add_detail(self, match):
         """
@@ -285,8 +286,8 @@ class HistoryResponse(Response):
         # and self itself.
         new_hist = HistoryResponse(self.resp.copy())
         m_id = match.match_id
-        new_hist.matches[m_id]['details'] = match.resp
-        return resp
+        new_hist.matches[m_id]['details'] = match
+        return new_hist
 
     def update_details(self, responses):
 
@@ -316,9 +317,7 @@ class HistoryResponse(Response):
          details : {match_id : game.resp}
         }
         """
-        obj = {'history': self.resp,
-               'details': {k: v.to_json() for k, v in self.details.items()}
-               }
+        obj = self.matches
         if filepath is None:
             return json.dumps(obj)
         else:
