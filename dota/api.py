@@ -180,12 +180,15 @@ class HistoryResponse(Response):
         self.results_remaining = resp['results_remaining']
         self.num_results = resp['num_results']
         self.total_results = resp['total_results']
-        self.matches = resp['matches']
-
-        self.match_ids = [match['match_id'] for match in self.matches]
+        self.matches = {x['match_id']: x for x in resp['matches']}
+        # match_ids *should* still be sorted.
+        self.match_ids = [match['match_id'] for match in resp['matches']]
         self.helper = helper
         self.resp = resp
-        self.details = {}
+        self._init_details(self)
+
+    def _init_details(self):
+
 
     def __add__(self, other):
         """
@@ -249,6 +252,41 @@ class HistoryResponse(Response):
 
         responses = {k: v for k, v in details.items()}
         return responses
+
+    def add_details(self, details):
+        """
+        Return a HistoryResponse with the match details inserted.
+
+        Parameters
+        ----------
+
+        details : DetailsResponse or dict of DetailsResponse
+
+        Returns
+        -------
+
+        HistoryResponse
+        """
+
+        if isinstance(details, DetailsResponse):
+            new = self._add_detail(self, details)
+        else:
+            for x in self:
+                pass
+
+    def _add_detail(self, match):
+        """
+        Add a single match detail to a HistoryResponse.
+
+        Returns a dict like a HistoryResponse.resp, but with a new
+        `details` key contianing a DetailsResponse.resp dict.
+        """
+        # Right now this break this sync between self.resp
+        # and self itself.
+        new_hist = HistoryResponse(self.resp.copy())
+        m_id = match.match_id
+        new_hist.matches[m_id]['details'] = match.resp
+        return resp
 
     def update_details(self, responses):
 
