@@ -22,7 +22,6 @@ class TestAPI(unittest.TestCase):
         "steam": KEY
     }
     """
-
     def setUp(self):
         with open('.key.json') as f:
             key = json.load(f)['steam']
@@ -76,8 +75,29 @@ class TestHistoryResponse(unittest.TestCase):
     #     self.assertEqual(result, expected)
     #     os.remove(test_to_json.json)
 
+
 class TestDetailsResponse(unittest.TestCase):
 
     def setUp(self):
         with open('details_response.json') as f:
             self.dr = DetailsResponse(json.load(f))
+
+    def test_match_report(self):
+        self.dr.match_report()  # works
+
+
+def _get_test_files():
+    """
+    Used to generate the details_response.json file.
+    """
+    with open('.key.json') as f:
+        key = json.load(f)['steam']
+    h = API(key)
+
+    hist = h.get_match_history(account_id=76561198025007092)
+    with open('history_response.json', 'w') as f:
+        json.dump(hist.resp, f)
+
+    dr = h.get_match_details(547519680)
+    with open('details_response.json', 'w') as f:
+        json.dump(dr.resp, f)

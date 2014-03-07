@@ -3,8 +3,9 @@
 from __future__ import division
 
 import itertools as it
-
 import json
+
+import arrow
 import requests
 from requests.exceptions import HTTPError
 import pandas as pd
@@ -16,25 +17,16 @@ with open(dirname(abspath(__file__)) + "/hero_names.json") as f:
     _HERO_NAMES = json.load(f)
 
 
-_PRIVATE = 4294967295  # privacy option in client
+try:
+    from itertools import filter
+except ImportError:
+    pass
 
-def get_players(m):
-    """
-    m : match
-    """
-    try:
-        return list(set([x['account_id'] for x in m['players']]))
-    except:
-        return [np.nan]
+_PRIVATE = 4294967295  # privacy option in client
 
 
 def flatten(iterable):
     return it.chain.from_iterable(iterable)
-
-
-def get_history(steam_id):
-    r = requests.get(HISTORY_URL.format(key=KEY, steam_id=steam_id))
-    return r.json()['result']
 
 
 def id_64(id_32):
@@ -254,7 +246,7 @@ class HistoryResponse(Response):
             if round((i / N) * 100) % 10 == 0:
                 print("\rAdded {} ({}%)".format(match, 100 * i / N))
 
-        responses = {k: DetailsResponse(v) for k, v in details.items()}
+        responses = {k: v for k, v in details.items()}
         return responses
 
     def update_details(self, responses):
@@ -328,6 +320,15 @@ class DetailsResponse(Response):
                 p['account_id'] = np.nan
         self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
         self.hero_id_to_names = _HERO_NAMES
+        self.hero_name_to_id = {v: k for k, v in _HERO_NAMES.items()}
+
+        self.negative_votes = self.resp['negative_votes']
+        self.positive_votes = self.resp['positive_votes']
+        self.lobby_type = self.resp['lobby_type']
+        self.duration = self.resp['duration']
+        self.first_blood_time = self.resp['first_blood_time']
+        self.league_id = self.resp['leagueid']
+        self.start_time = arrow.get(self.resp['start_time'])
 
     def by_player(self, key):
         """
@@ -347,7 +348,8 @@ class DetailsResponse(Response):
         # TODO: ability upgrades
         keys = ['level', 'kills', 'deaths', 'assists',
                 'last_hits', 'denies', 'gold', 'gold_spent', 'player_slot',
-                'account_id', 'item_0', 'item_1', 'item_2', 'item_3', 'item_4',
+                'account_id', 'hero_damage', 'hero_healing',
+                'item_0', 'item_1', 'item_2', 'item_3', 'item_4',
                 'item_5']
         df = pd.concat([pd.Series(self.by_player(key))
                         for key in keys], axis=1, keys=keys)
@@ -375,3 +377,64 @@ class DetailsResponse(Response):
         else:
             with open(filepath, 'w') as f:
                 json.dump(self.resp, f)
+
+    def tower_status(self):
+        """
+        http://wiki.teamfortress.com/wiki/WebAPI/GetMatchDetails#Tower_Status
+        """
+        bsr = bin(self.resp['tower_status_radiant'])
+        bsd = bin(self.resp['tower_status_dire'])
+
+        d = {'radiant': bsr, 'dire': bsd}
+        return d
+
+    def barracks_status(self, team=None):
+        """
+
+        8-bit unsigned int.
+
+        0 0 0 0 0 0 0 1
+        ^ ^ ^ ^ ^ ^ ^ ^
+        1 2 3 4 5 6 7 8
+
+        1: unused
+        2: unused
+        3: bottom ranged
+        4: bottom melee
+        5: mid ranged
+        6: mid melee
+        7: top ranged
+        8: top melee
+
+        1 is up, 0 is destroyed.
+
+        http://wiki.teamfortress.com/wiki/WebAPI/GetMatchDetails#Barracks_Status
+        """
+        bsr = bin(self.resp['barracks_status_radiant'])
+        bsd = bin(self.resp['barracks_status_dire'])
+
+        d = {'radiant': bsr, 'dire': bsd}
+        return d
+
+    def skill_build(self, hero='all'):
+        """
+        Display the skill build as a _.
+
+        Parameters
+        ----------
+
+        hero : str
+
+        TODO: http://cdn.dota2.com/apps/dota2/images/abilities/antimage_blink_lg.png
+        """
+        if hero == 'all':
+            raise ValueError("Not  Implemented")
+        else:
+            if not int(hero):
+                hero_id = self.hero_name_to_id[hero]
+            f = lambda x: x['hero_id'] == hero_id
+            # should be unique
+            skills = list(filter(f, self.resp['players']))[0]['ability_upgrades']
+            df = pd.DataFrame(skills)
+            df.set_index(['time'], inplace=True)
+        return df
