@@ -40,7 +40,7 @@ class TestAPI(unittest.TestCase):
         MATCH_ID = 547519680
         d = self.h.get_match_details(match_id=MATCH_ID)
         self.assertEqual(d.match_id, MATCH_ID)
-        self.assertEqual(d.winner, 'Radient')
+        self.assertEqual(d.winner, 'Radiant')
 
 
 class TestHistoryResponse(unittest.TestCase):
