@@ -13,7 +13,9 @@ import numpy as np
 
 from os.path import dirname, abspath
 
-with open(dirname(abspath(__file__)) + "/hero_names.json") as f:
+_HERO_PATH = dirname(abspath(__file__)) + "/hero_names.json"
+
+with open(_HERO_PATH) as f:
     _HERO_NAMES = json.load(f)
     _HERO_NAMES = {x['name']: x['id'] for x in _HERO_NAMES['heroes']}
 
@@ -132,9 +134,12 @@ class API:
             raise HTTPError
         return DetailsResponse(r.json()['result'])
 
-    def get_heros(self):
+    def get_heros(self, to_disk=False):
         url = "https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v0001/"
         r = requests.get(url, params={'key': self.key})
+        if to_disk:
+            with open(_HERO_PATH, 'w') as f:
+                json.dump(r['result'], f)
         return r.json()['result']
 
     def get_player_summaries(self):
@@ -320,8 +325,8 @@ class DetailsResponse(Response):
             if p.get('account_id') == _PRIVATE:
                 p['account_id'] = np.nan
         self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
-        self.hero_id_to_names = _HERO_NAMES
-        self.hero_name_to_id = {v: k for k, v in _HERO_NAMES.items()}
+        self.hero_name_to_id = _HERO_NAMES
+        self.hero_id_to_names = {v: k for k, v in _HERO_NAMES.items()}
 
         self.negative_votes = self.resp['negative_votes']
         self.positive_votes = self.resp['positive_votes']
@@ -355,7 +360,7 @@ class DetailsResponse(Response):
         df = pd.concat([pd.Series(self.by_player(key))
                         for key in keys], axis=1, keys=keys)
         df['match_id'] = self.match_id
-        df = df.rename(index=lambda x: self.hero_id_to_names.get(str(x), str(x)))
+        df = df.rename(index=lambda x: self.hero_id_to_names.get(int(x), str(x)).split('npc_dota_hero_')[-1])
         df.index.set_names(['hero'], inplace=True)
 
         def rep_team(x):
