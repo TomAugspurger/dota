@@ -1,4 +1,6 @@
+import argparse
 import re
+import os
 
 from lxml import html
 
@@ -56,6 +58,10 @@ def get_ability_block(f, line):
 
     return results
 
+def parse_items(f):
+    pass
+
+
 def get_block(f, line, kind):
     if kind == 'hero':
         name = line.split(_start_hero_pattern)[1].rstrip('"\t\n')
@@ -99,9 +105,18 @@ def get_pro_matches():
     with open(there,  'a+') as f:
         f.writelines(new_ids)
 
-def main(infile):
-    """
-    infile should be npc_heros.txt
-    """
-    with open(infile, 'r') as f:
-        parse_heros(f)
+parser = argparse.ArgumentParser()
+parser.add_argument('kind', choices=['items', 'heroes', 'abilities',
+                                     'pro_matches'])
+
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    kind = args.kind
+
+    dispatch = {'items': parse_items,
+                'heroes': parse_heros,
+                'abilities': parse_abilities,
+                'pro_matches': get_pro_matches
+                }
+    dispatch[kind]()
