@@ -65,7 +65,7 @@ setup(
     # What does your project relate to?
     keywords='dota dota2 statistics',
 
-    install_requires = ['arrow', 'pandas', 'numpy', 'requests'],
+    install_requires = ['arrow', 'pandas', 'numpy', 'requests', 'lxml'],
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages.
     packages=find_packages(exclude=["contrib", "docs", "tests*"]),

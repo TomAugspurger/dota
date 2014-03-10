@@ -1,5 +1,7 @@
 import re
 
+from lxml import html
+
 _start_hero_pattern = '\t"npc_dota_hero_'
 _start_item_pattern = '\t"item_'
 # ability has 1 false positive `\t"Version"`
@@ -77,6 +79,25 @@ def get_block(f, line, kind):
             results.append(re.search(pair, line).groups())
 
     return results
+
+def get_pro_matches():
+    url = "http://www.datdota.com/matches.php"
+    r = html.parse(url).getroot()
+
+    reg = re.compile(r'match.*(\d{9})$')
+    links = filter(lambda x: reg.match(x[2]), r.iterlinks())
+
+    here = os.path.dirname(__file__)
+    there = os.path.join(here, 'dota', 'pro_match_ids.txt')
+
+    with open(there, 'r') as f:
+        old_ids = f.readlines()
+
+    ids = (x[2].split('?q=')[-1] +'\n' for x in links)
+    new_ids = (x for x in ids if x not in old_ids)
+
+    with open(there,  'a+') as f:
+        f.writelines(new_ids)
 
 def main(infile):
     """
