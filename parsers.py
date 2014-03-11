@@ -86,6 +86,7 @@ def get_block(f, line, kind):
 
     return results
 
+
 def get_pro_matches():
     url = "http://www.datdota.com/matches.php"
     r = html.parse(url).getroot()
@@ -100,10 +101,12 @@ def get_pro_matches():
         old_ids = f.readlines()
 
     ids = (x[2].split('?q=')[-1] +'\n' for x in links)
-    new_ids = (x for x in ids if x not in old_ids)
+    new_ids = [x for x in ids if x not in old_ids]
 
     with open(there,  'a+') as f:
         f.writelines(new_ids)
+
+    print("Added {}".format(new_ids))
 
 parser = argparse.ArgumentParser()
 parser.add_argument('kind', choices=['items', 'heroes', 'abilities',
