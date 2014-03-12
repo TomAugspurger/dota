@@ -131,14 +131,6 @@ class Player(Base):
     handle = Column(String)
 
 
-def make_players(DR):
-    players = []
-    for player in DR.resp['players']:
-        players.append(PlayerGame(d.match_id, player))
-
-    return players
-
-
 def main():
     games = ['detail392159753.json', 'detail430298310.json', 'detail462344226.json',
              'detail510935923.json', 'detail550014092.json', 'detail431670975.json']
