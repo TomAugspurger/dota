@@ -1,9 +1,10 @@
 import os
 import json
 
-from sqlalchemy import Boolean, Column, Integer, String, create_engine, Sequence
+from sqlalchemy import (Boolean, Column, Integer, String, create_engine,
+                        Sequence, Table, ForeignKey)
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, relationship, backref
 
 from dota import api
 
@@ -41,6 +42,7 @@ class Game(Base):
     # player7 = Column(Integer)
     # player8 = Column(Integer)
     # player9 = Column(Integer)
+    players = relationship("Player", backref=backref("games"))
 
     def __init__(self, resp):
         self.match_id = resp['match_id']
@@ -80,7 +82,7 @@ class Player(Base):
 
     # player_match_id = Column(Integer,
     #                          Sequence('player_match_id_sq'), primary_key=True)
-    match_id = Column(Integer)
+    match_id = Column(Integer, ForeignKey('games.match_id'))
     account_id = Column(Integer, primary_key=True)
     hero_id = Column(Integer)
     level = Column(Integer)
@@ -105,6 +107,8 @@ class Player(Base):
     kills = Column(Integer)
     leaver_status = Column(Integer)
     # ability_upgrades = Column(Integer)
+
+    matches = relationship("Game", backref="players.account_id")
 
     def __init__(self, match_id, resp):
 
@@ -159,4 +163,11 @@ for g in games:
     game.metadata.create_all(engine)
     session.add(game)
 
+game.players = [Player(d.match_id, x) for x in d.resp['players']]
 session.commit()
+
+# association_table = Table('association', Base.metadata,
+#                           Column('match_id', Integer, ForeignKey('games.match_id')),
+#                           Column('player_id', Integer, ForeignKey('players.account_id'))
+#                           )
+
