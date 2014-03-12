@@ -14,10 +14,16 @@ import numpy as np
 from os.path import dirname, abspath
 
 _HERO_PATH = dirname(abspath(__file__)) + "/hero_names.json"
+_ABILITIES_PATH = dirname(abspath(__file__)) + "/abilities_parsed.json"
 
 with open(_HERO_PATH) as f:
     _HERO_NAMES = json.load(f)
     _HERO_NAMES = {x['name']: x['id'] for x in _HERO_NAMES['heroes']}
+
+with open(_ABILITIES_PATH) as f:
+    _ABILTIES = json.load(f)
+    _ABILITY_ID_TO_NAME = {v['ID']: k for k, v in _ABILTIES.items()}
+    _ABILITY_NAME_TO_ID = {k: v['ID'] for k, v in _ABILTIES.items()}
 
 
 try:
@@ -436,11 +442,11 @@ class DetailsResponse(Response):
         if hero == 'all':
             raise ValueError("Not  Implemented")
         else:
-            if not int(hero):
-                hero_id = self.hero_name_to_id[hero]
+            if not isinstance(hero, int):
+                hero_id = self.hero_name_to_id['npc_dota_hero_' + hero]
             f = lambda x: x['hero_id'] == hero_id
             # should be unique
             skills = list(filter(f, self.resp['players']))[0]['ability_upgrades']
             df = pd.DataFrame(skills)
-            df.set_index(['time'], inplace=True)
+            df['ability'] = df.ability.astype(str).map(_ABILITY_ID_TO_NAME)
         return df
