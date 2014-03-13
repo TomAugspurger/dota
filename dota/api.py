@@ -13,17 +13,25 @@ import numpy as np
 
 from os.path import dirname, abspath
 
-_HERO_PATH = dirname(abspath(__file__)) + "/hero_names.json"
-_ABILITIES_PATH = dirname(abspath(__file__)) + "/abilities_parsed.json"
+_hero_path = dirname(abspath(__file__)) + "/heroes_parsed.json"
+_abilities_path = dirname(abspath(__file__)) + "/abilities_parsed.json"
+_items_path = dirname(abspath(__file__)) + "/items_parsed.json"
 
-with open(_HERO_PATH) as f:
-    _HERO_NAMES = json.load(f)
-    _HERO_NAMES = {x['name']: x['id'] for x in _HERO_NAMES['heroes']}
+with open(_hero_path) as f:
+    _hero_names_to_id = json.load(f)
+    _hero_names_to_id = {k: v.get('HeroID')
+                         for k, v in _hero_names_to_id.items()}
+    _hero_id_to_names = {v: k for k, v in _hero_names_to_id.items()}
 
-with open(_ABILITIES_PATH) as f:
-    _ABILTIES = json.load(f)
-    _ABILITY_ID_TO_NAME = {v['ID']: k for k, v in _ABILTIES.items()}
-    _ABILITY_NAME_TO_ID = {k: v['ID'] for k, v in _ABILTIES.items()}
+with open(_abilities_path) as f:
+    _abilties = json.load(f)
+    _ability_id_to_name = {v['ID']: k for k, v in _abilties.items()}
+    _ability_name_to_id = {k: v['ID'] for k, v in _abilties.items()}
+
+with open(_items_path) as f:
+    _items = json.load(f)
+    _item_id_to_name = {v['ID']: k for k, v in _items.items()}
+    _item_name_to_id = {k: v['ID'] for k, v in _items.items()}
 
 
 try:
@@ -144,7 +152,7 @@ class API:
         url = "https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v0001/"
         r = requests.get(url, params={'key': self.key})
         if to_disk:
-            with open(_HERO_PATH, 'w') as f:
+            with open(_hero_path, 'w') as f:
                 json.dump(r['result'], f)
         return r.json()['result']
 
@@ -331,8 +339,8 @@ class DetailsResponse(Response):
             if p.get('account_id') == _PRIVATE:
                 p['account_id'] = np.nan
         self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
-        self.hero_name_to_id = _HERO_NAMES
-        self.hero_id_to_names = {v: k for k, v in _HERO_NAMES.items()}
+        self.hero_name_to_id = _hero_names_to_id
+        self.hero_id_to_names = {v: k for k, v in _hero_names_to_id.items()}
 
         self.negative_votes = self.resp['negative_votes']
         self.positive_votes = self.resp['positive_votes']
@@ -448,5 +456,5 @@ class DetailsResponse(Response):
             # should be unique
             skills = list(filter(f, self.resp['players']))[0]['ability_upgrades']
             df = pd.DataFrame(skills)
-            df['ability'] = df.ability.astype(str).map(_ABILITY_ID_TO_NAME)
+            df['ability'] = df.ability.astype(str).map(_ability_id_to_name)
         return df
