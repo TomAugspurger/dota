@@ -10,6 +10,11 @@ from dota import api
 
 Base = declarative_base()
 
+association_table = Table('association', Base.metadata,
+                          Column('match_id', Integer, ForeignKey('games.match_id')),
+                          Column('player_id', Integer, ForeignKey('players.account_id'))
+                          )
+
 
 class Game(Base):
 
@@ -42,7 +47,8 @@ class Game(Base):
     # player7 = Column(Integer)
     # player8 = Column(Integer)
     # player9 = Column(Integer)
-    players = relationship("Player", backref=backref("games"))
+    players = relationship("Player", secondary=association_table,
+                           backref='games')
 
     def __init__(self, resp):
         self.match_id = resp['match_id']
@@ -80,10 +86,21 @@ class Player(Base):
 
     __tablename__ = 'players'
 
-    # player_match_id = Column(Integer,
-    #                          Sequence('player_match_id_sq'), primary_key=True)
     match_id = Column(Integer, ForeignKey('games.match_id'))
     account_id = Column(Integer, primary_key=True)
+
+    matches = relationship("Game", secondary=association_table,
+                           backref="players.account_id")
+
+
+class PlayerGame(Base):
+
+    __tablename__ = 'playergames'
+
+    id = Column(Integer, Sequence('player_game_seq'), primary_key=True)
+    match_id = Column(Integer, ForeignKey('games.match_id'))
+    account_id = Column(Integer, ForeignKey('players.account_id'))
+
     hero_id = Column(Integer)
     level = Column(Integer)
     denies = Column(Integer)
@@ -106,9 +123,6 @@ class Player(Base):
     tower_damage = Column(Integer)
     kills = Column(Integer)
     leaver_status = Column(Integer)
-    # ability_upgrades = Column(Integer)
-
-    matches = relationship("Game", backref="players.account_id")
 
     def __init__(self, match_id, resp):
 
@@ -141,7 +155,7 @@ class Player(Base):
 def make_players(DR):
     players = []
     for player in DR.resp['players']:
-        players.append(Player(d.match_id, player))
+        players.append(PlayerGame(d.match_id, player))
 
     return players
 
@@ -163,11 +177,5 @@ for g in games:
     game.metadata.create_all(engine)
     session.add(game)
 
-game.players = [Player(d.match_id, x) for x in d.resp['players']]
+# game.players = [PlayerGame(d.match_id, x) for x in d.resp['players']]
 session.commit()
-
-# association_table = Table('association', Base.metadata,
-#                           Column('match_id', Integer, ForeignKey('games.match_id')),
-#                           Column('player_id', Integer, ForeignKey('players.account_id'))
-#                           )
-
