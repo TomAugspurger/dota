@@ -1,5 +1,6 @@
 import os
 import json
+import pathlib
 
 
 import pandas as pd
@@ -132,10 +133,11 @@ class Player(Base):
 
 
 def main():
-    games = ['detail392159753.json', 'detail430298310.json', 'detail462344226.json',
-             'detail510935923.json', 'detail550014092.json', 'detail431670975.json']
 
-    engine = create_engine('sqlite:///:memory:', echo=True)
+    p = pathlib.Path('../data/pro/')
+    games = filter(lambda x: x.suffix == '.json', p.iterdir())
+
+    engine = create_engine('sqlite:///pro.db')
     Base.metadata.create_all(engine)
 
     Session = sessionmaker(bind=engine)
@@ -144,7 +146,7 @@ def main():
     gs = []
     for g in games:
 
-        with open(os.path.expanduser('~/sandbox/dota/data/' + g)) as f:
+        with g.open() as f:
             d = api.DetailsResponse(json.load(f))
 
         game = Game(d.resp)
