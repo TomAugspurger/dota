@@ -1,10 +1,11 @@
 import os
 import json
+import pathlib
 
 
 import pandas as pd
 from sqlalchemy import (Boolean, Column, Integer, String, create_engine,
-                        Sequence, Table, ForeignKey)
+                        Sequence, Table, ForeignKey, func)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship, backref
 
@@ -131,28 +132,25 @@ class Player(Base):
     handle = Column(String)
 
 
-def make_players(DR):
-    players = []
-    for player in DR.resp['players']:
-        players.append(PlayerGame(d.match_id, player))
+def make_engine(filepath='sqlite:///pro.db'):
 
-    return players
-
-
-def main():
-    games = ['detail392159753.json', 'detail430298310.json', 'detail462344226.json',
-             'detail510935923.json', 'detail550014092.json', 'detail431670975.json']
-
-    engine = create_engine('sqlite:///:memory:', echo=True)
+    engine = create_engine(filepath)
     Base.metadata.create_all(engine)
+    return engine
 
+
+def add_to_db(engine, games):
+    """
+    engine : sqlalchemy engine
+    games : List of Paths
+    """
     Session = sessionmaker(bind=engine)
     session = Session()
 
     gs = []
     for g in games:
 
-        with open(os.path.expanduser('~/sandbox/dota/data/' + g)) as f:
+        with g.open() as f:
             d = api.DetailsResponse(json.load(f))
 
         game = Game(d.resp)
@@ -177,7 +175,46 @@ def main():
         session.add_all(pls)
     session.add_all(gs)
     session.commit()
+    return session
+
+
+def main():
+
+    p = pathlib.Path('../data/pro/')
+    games = filter(lambda x: x.suffix == '.json', p.iterdir())
+
+    engine = make_engine()
+    session = add_to_db(engine, games)
     return engine, session
+
+
+def update_db():
+    """
+    Create an engine and session, query for existing game ids.
+    Add new files in data dir to.
+    """
+    engine = make_engine()
+
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    existing_games = set(list(zip(*session.query(Game.match_id).all()))[0])
+    pro_path = pathlib.Path(os.path.expanduser('~/sandbox/dota/data/pro/'))
+    pro_path = filter(lambda x: x.suffix == '.json', pro_path.iterdir())
+
+    new_games = (x for x in pro_path if int(x.stem) not in existing_games)
+    session = add_to_db(new_games)
+    return engine, session
+
+#-----------------------------------------------------------------------------
+# Cookbookish stuff
+
+
+def count_player_games(session):
+    count = session.query(func.count(PlayerGame.account_id), PlayerGame.account_id).\
+        group_by(PlayerGame.account_id).\
+        order_by(func.count(PlayerGame.account_id)).all()
+    return count
 
 if __name__ == '__main__':
 
