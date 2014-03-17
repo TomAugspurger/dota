@@ -4,7 +4,7 @@ import re
 import pathlib
 
 
-def cached_games(directory, regex=r"[a-z/]*(\d*)\.json"):
+def cached_games(directory, regex=r"[\w\/]*?(\d+)\.json"):
     """
     Return the match ids of all games.
 
@@ -25,5 +25,5 @@ def cached_games(directory, regex=r"[a-z/]*(\d*)\.json"):
 
     regex = re.compile(regex)
     match_ids = filter(lambda x: regex.match(str(x)), directory.iterdir())
-    match_ids = [regex.match(str(x)).groups()[0] for x in match_ids]
+    match_ids = [int(regex.match(str(x)).groups()[0]) for x in match_ids]
     return match_ids

@@ -22,4 +22,14 @@ if __name__ == '__main__':
     with key_path.open() as f:
         key = json.load(f)['steam']
 
-    cached = cached_games(data_dir)    
+    cached = cached_games(data_dir)
+
+    h = api.API(key)
+    hr = h.get_match_history(account_id=steam_id)
+    new_ids = set(hr.match_ids) - set(cached)
+
+    for id_ in new_ids:
+        dr = h.get_match_details(id_)
+        with (data_dir / (str(dr.match_id) + '.json')).open('w') as f:
+            json.dump(dr.resp, f)
+        print("Added {}.".format(id_))
