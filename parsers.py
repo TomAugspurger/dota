@@ -136,7 +136,7 @@ def get_pro_matches():
     links = filter(lambda x: reg.match(x[2]), r.iterlinks())
 
     here = os.path.dirname(__file__)
-    match_ids_path = os.path.join(here, 'dota', 'pro_match_ids.txt')
+    match_ids_path = os.path.join(here, 'data', 'pro', 'pro_match_ids.txt')
 
     with open(match_ids_path, 'r') as f:
         old_ids = f.readlines()
@@ -164,14 +164,13 @@ def get_pro_matches():
                                os.listdir(str(data_path))))
     matches = [x.groups()[0] for x in matches]
     new_matches = [x for x in match_ids if x not in matches]
-    new_matches
     details = {mid: h.get_match_details(mid) for mid in new_matches}
 
     if not data_path.exists():
         data_path.mkdir()
 
     for k in details:
-        with open(data_path.joinpath(k + '.json'), 'w') as f:
+        with (data_path / (str(k) + '.json')).open('w') as f:
             json.dump(details[k].resp, f)
 
     print("Added {}".format(new_ids))
