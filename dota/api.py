@@ -377,8 +377,30 @@ class DetailsResponse(Response):
                 'item_5']
         df = pd.concat([pd.Series(self.by_player(key))
                         for key in keys], axis=1, keys=keys)
-        df['match_id'] = self.match_id
-        df = df.rename(index=lambda x: self.hero_id_to_names.get(int(x), str(x)).split('npc_dota_hero_')[-1])
+        df = self.format_df(df, self.winner, self.match_id)
+        return df
+
+    @staticmethod
+    def format_df(df, winner, match_id):
+        """
+        Format a dataframe built from resp.
+
+        Parameters
+        ----------
+
+        df : DataFrame built by concating data from resp.players
+        winner : str
+            'Radiant' or 'Dire'
+        match_id : int
+        """
+        df['match_id'] = match_id
+        try:
+            df = df.set_index('hero_id')
+        except KeyError:
+            pass
+        df = df.rename(index=lambda x:
+                       _hero_id_to_names.get(str(x),
+                                             str(x)))
         df.index.set_names(['hero'], inplace=True)
 
         def rep_team(x):
@@ -388,11 +410,10 @@ class DetailsResponse(Response):
                 return 'Dire'
 
         df['team'] = df['player_slot'].apply(rep_team)
-        df['win'] = df['team'] == self.winner
+        df['win'] = df['team'] == winner
         df = df.sort('team', ascending=False)
 
-        df = df.reset_index().set_index(['match_id', 'team', 'hero'])
-
+        df = df.reset_index().set_index(['match_id', 'team', 'hero']).sort_index()
         return df
 
     def to_json(self, filepath=None):
