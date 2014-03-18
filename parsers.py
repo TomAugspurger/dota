@@ -147,7 +147,7 @@ def get_pro_matches():
     with open(match_ids_path,  'a+') as f:
         f.writelines(new_ids)
 
-    #---------------------------------------------------------------------------
+    #--------------------------------------------------------------------------
     # Get Match Details for new matches
     with open(os.path.expanduser('~/') + 'Dropbox/bin/api-keys.txt') as f:
         key = json.load(f)['steam']
@@ -172,6 +172,12 @@ def get_pro_matches():
     for k in details:
         with (data_path / (str(k) + '.json')).open('w') as f:
             json.dump(details[k].resp, f)
+
+    #--------------------------------------------------------------------------
+    # Insert into pro.db
+    from examples.sqlalchemyORM import update_db
+
+    update_db(data_path)
 
     print("Added {}".format(new_ids))
 

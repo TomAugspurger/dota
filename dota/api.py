@@ -82,6 +82,10 @@ class API:
     def __init__(self, key):
         self.key = key
 
+        # ordinal times of patch releases (roughly)
+        _679 = 1381989600
+        _680 = 1390802400
+
     def get_match_history(self, **kwargs):
         """
 

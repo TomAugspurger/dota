@@ -188,22 +188,27 @@ def main():
     return engine, session
 
 
-def update_db():
+def update_db(data_path):
     """
     Create an engine and session, query for existing game ids.
     Add new files in data dir to.
+
+
+    Parameters
+    ----------
+    data_path : Path
+        path to the pro match directory. Engine is at data_path / pro.db
     """
-    engine = make_engine()
+    engine = make_engine("sqlite:///" + str(data_path / "pro.db"))
 
     Session = sessionmaker(bind=engine)
     session = Session()
 
     existing_games = set(list(zip(*session.query(Game.match_id).all()))[0])
-    pro_path = pathlib.Path(os.path.expanduser('~/sandbox/dota/data/pro/'))
-    pro_path = filter(lambda x: x.suffix == '.json', pro_path.iterdir())
+    pro_matches = filter(lambda x: x.suffix == '.json', data_path.iterdir())
 
-    new_games = (x for x in pro_path if int(x.stem) not in existing_games)
-    session = add_to_db(new_games)
+    new_games = (x for x in pro_matches if int(x.stem) not in existing_games)
+    session = add_to_db(engine, new_games)
     return engine, session
 
 #-----------------------------------------------------------------------------
