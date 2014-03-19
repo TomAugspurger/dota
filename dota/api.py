@@ -14,13 +14,19 @@ import numpy as np
 from os.path import dirname, abspath
 
 _hero_path = dirname(abspath(__file__)) + "/heroes_parsed.json"
+_current_hero_path = dirname(abspath(__file__)) + "/current_heroes.json"
 _abilities_path = dirname(abspath(__file__)) + "/abilities_parsed.json"
 _items_path = dirname(abspath(__file__)) + "/items_parsed.json"
 
 with open(_hero_path) as f:
-    _hero_names_to_id = json.load(f)
-    _hero_names_to_id = {k: v.get('HeroID')
-                         for k, v in _hero_names_to_id.items()}
+    _heroes = json.load(f)
+    _hero_roles = {x: _heroes[x].get('Role') for x in _heroes}
+    _hero_roles = {hero: role.split(',') for hero, role in _hero_roles.items()
+                   if role is not None}  # drops base
+    # updated hero list
+with open(_current_hero_path) as f:
+    d = json.load(f)['heroes']
+    _hero_names_to_id = {x['name'].split('npc_dota_hero_')[1]: x['id'] for x in d}
     _hero_id_to_names = {v: k for k, v in _hero_names_to_id.items()}
 
 with open(_abilities_path) as f:
@@ -152,7 +158,7 @@ class API:
             raise HTTPError
         return DetailsResponse(r.json()['result'])
 
-    def get_heros(self, to_disk=False):
+    def get_heroes(self, to_disk=False):
         url = "https://api.steampowered.com/IEconDOTA2_570/GetHeroes/v0001/"
         r = requests.get(url, params={'key': self.key})
         if to_disk:
@@ -399,7 +405,7 @@ class DetailsResponse(Response):
         except KeyError:
             pass
         df = df.rename(index=lambda x:
-                       _hero_id_to_names.get(str(x),
+                       _hero_id_to_names.get(int(x),
                                              str(x)))
         df.index.set_names(['hero'], inplace=True)
 
@@ -483,3 +489,9 @@ class DetailsResponse(Response):
             df = pd.DataFrame(skills)
             df['ability'] = df.ability.astype(str).map(_ability_id_to_name)
         return df
+
+
+def update_hero_names(key):
+    h = API(key)
+    with open(dirname(abspath(__file__)) + 'current_heroes.json', 'w') as f:
+        json.dump(h.get_heroes(), f)
