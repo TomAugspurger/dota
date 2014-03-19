@@ -43,10 +43,8 @@ def get_pro_matches():
     f = pathlib.Path(__file__).absolute()
     data_path = f.parent.joinpath(pathlib.Path('data/pro'))
 
-    matches = filter(None, map(lambda x: re.match(r'.*(\d{9}).json$', x),
-                               os.listdir(str(data_path))))
-    matches = [x.groups()[0] for x in matches]
-    new_matches = [x for x in match_ids if x not in matches]
+    cached = cached_games(data_path)
+    new_matches = [x for x in match_ids if int(x) not in cached]
     details = {mid: h.get_match_details(mid) for mid in new_matches}
 
     if not data_path.exists():
