@@ -88,8 +88,10 @@ class Game(Base):
     __tablename__ = 'games'
 
     match_id = Column(Integer, primary_key=True)
-    dire_id = Column(Integer, ForeignKey('teams.team_id'))
-    radiant_id = Column(Integer, ForeignKey('teams.team_id'))
+    dire_team_id = Column(Integer, ForeignKey('teams.team_id'))
+    dire_team_name = Column(Integer, ForeignKey('teams.team_name'))
+    radiant_team_id = Column(Integer, ForeignKey('teams.team_id'))
+    radiant_team_name = Column(Integer, ForeignKey('teams.team_name'))
 
     start_time = Column(Integer)
     match_seq_num = Column(Integer)
@@ -112,8 +114,8 @@ class Game(Base):
 
     def __init__(self, resp):
         self.match_id = resp['match_id']
-        self.dire_id = resp.get('dire_team_id')
-        self.radiant_id = resp.get('radiant_team_id')
+        self.dire_team_id = resp.get('dire_team_id')
+        self.radiant_team_id = resp.get('radiant_team_id')
 
         self.start_time = resp['start_time']
         self.match_seq_num = resp['match_seq_num']
