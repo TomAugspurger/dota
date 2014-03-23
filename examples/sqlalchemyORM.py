@@ -1,15 +1,16 @@
-import os
+# -*- coding: utf-8 -*-
 import json
 import pathlib
 
 
 import pandas as pd
 from sqlalchemy import (Boolean, Column, Integer, String, create_engine,
-                        Sequence, Table, ForeignKey, func)
+                        ForeignKey, func)
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, relationship, backref
+from sqlalchemy.orm import sessionmaker, relationship
 
 from dota import api
+from dota.helpers import cached_games
 
 Base = declarative_base()
 
@@ -17,6 +18,7 @@ Base = declarative_base()
 #                           Column('match_id', Integer, ForeignKey('games.match_id')),
 #                           Column('player_id', Integer, ForeignKey('players.account_id'))
 #                           )
+
 
 class PlayerGame(Base):
 
@@ -77,12 +79,18 @@ class PlayerGame(Base):
         self.kills = resp['kills']
         self.leaver_status = resp['leaver_status']
 
+    def __repr__(self):
+        return "<Player {}>, <Game {}>".format(self.account_id, self.match_id)
+
 
 class Game(Base):
 
     __tablename__ = 'games'
 
     match_id = Column(Integer, primary_key=True)
+    dire_id = Column(Integer, ForeignKey('teams.team_id'))
+    radiant_id = Column(Integer, ForeignKey('teams.team_id'))
+
     start_time = Column(Integer)
     match_seq_num = Column(Integer)
     leagueid = Column(String)
@@ -104,6 +112,9 @@ class Game(Base):
 
     def __init__(self, resp):
         self.match_id = resp['match_id']
+        self.dire_id = resp.get('dire_team_id')
+        self.radiant_id = resp.get('radiant_team_id')
+
         self.start_time = resp['start_time']
         self.match_seq_num = resp['match_seq_num']
         self.leagueid = resp['leagueid']
@@ -131,6 +142,25 @@ class Player(Base):
     account_id = Column(Integer, primary_key=True)
     handle = Column(String)
 
+    def __repr__(self):
+        return "<Player {}>. {}".format(self.account_id, self.handle)
+
+
+class Team(Base):
+    # TODO: relate players to teams, and back
+    __tablename__ = 'teams'
+
+    team_id = Column(Integer, primary_key=True)
+    team_name = Column(String)
+
+    def __init__(self, resp, side='radiant'):
+
+        self.team_id = resp.get(side + '_' + 'team_id')
+        self.team_name = resp.get(side + '_' + 'name')
+
+    def __repr__(self):
+        return "<Team {}>. {}".format(self.team_id, self.team_name)
+
 
 def make_engine(filepath='sqlite:///pro.db'):
 
@@ -157,6 +187,16 @@ def add_to_db(engine, games):
         gs.append(game)
         pgs = []
         pls = []
+
+        for side in ['radiant', 'dire']:
+            team = Team(d.resp, side=side)
+            if team.team_id is None:
+                continue
+            existing_team = session.query(Team).filter(
+                Team.team_id == team.team_id).first()
+            if existing_team is None:
+                session.add(team)
+
         for player in d.resp['players']:
             pg = PlayerGame(d.match_id, player)
             if pd.isnull(pg.account_id):
@@ -204,10 +244,14 @@ def update_db(data_path):
     Session = sessionmaker(bind=engine)
     session = Session()
 
-    existing_games = set(list(zip(*session.query(Game.match_id).all()))[0])
-    pro_matches = filter(lambda x: x.suffix == '.json', data_path.iterdir())
+    try:
+        sql_games = set(list(zip(*session.query(Game.match_id).all()))[0])
+    except IndexError:  # new db
+        sql_games = set()
+    cached = cached_games(data_path.resolve())  # JSON files on disk
+    new_games = set(cached) - sql_games
+    new_games = (data_path / pathlib.Path(str(game) + '.json') for game in new_games)
 
-    new_games = (x for x in pro_matches if int(x.stem) not in existing_games)
     session = add_to_db(engine, new_games)
     return engine, session
 

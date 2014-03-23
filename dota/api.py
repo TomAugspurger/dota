@@ -359,6 +359,10 @@ class DetailsResponse(Response):
         self.first_blood_time = self.resp['first_blood_time']
         self.league_id = self.resp['leagueid']
         self.start_time = arrow.get(self.resp['start_time'])
+        self.dire_name = resp.get('dire_name')
+        self.radiant_name = resp.get('radiant_name')
+        self.dire_team_id = resp.get('dire_team_id')
+        self.radiant_team_id = resp.get('radiant_team_id')
 
     def by_player(self, key):
         """

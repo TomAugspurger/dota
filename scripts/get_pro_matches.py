@@ -10,6 +10,7 @@ from lxml import html
 from dota import api
 from dota.helpers import cached_games
 
+
 def get_pro_matches():
     # Find new match ids
     url = "http://www.datdota.com/matches.php"
@@ -27,6 +28,7 @@ def get_pro_matches():
     ids = (x[2].split('?q=')[-1] + '\n' for x in links)
     new_ids = [x for x in ids if x not in old_ids]
 
+    print("New matches found: {}".format(new_ids))
     with match_ids_path.open('a+') as f:
         f.writelines(new_ids)
 
@@ -41,7 +43,7 @@ def get_pro_matches():
         match_ids = [x.strip() for x in f.readlines()]
 
     f = pathlib.Path(__file__).absolute()
-    data_path = f.parent.joinpath(pathlib.Path('data/pro'))
+    data_path = f.parent.parent.joinpath(pathlib.Path('data/pro'))
 
     cached = cached_games(data_path)
     new_matches = [x for x in match_ids if int(x) not in cached]
