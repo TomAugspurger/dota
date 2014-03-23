@@ -6,7 +6,8 @@ from dota import api
 from dota.helpers import cached_games
 
 parser = argparse.ArgumentParser("Get new matches by account ID.")
-parser.add_argument("id", type=int, help="Steam ID")
+parser.add_argument("id", type=int, help="Steam ID. e.g.: 76561198102796812 "
+                                         "or 76561198025007092.")
 parser.add_argument("--key_path", type=str, help="Path to JSON file with steam"
                     " key.", default='~/Dropbox/bin/api-keys.txt')
 parser.add_argument("--data_dir", type=str, help='Path to data directory.',
