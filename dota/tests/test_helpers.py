@@ -25,3 +25,6 @@ class TestHelpers(unittest.TestCase):
     def tearDown(self):
         pathlib.Path('details12345678.json').unlink()
         pathlib.Path('1234.json').unlink()
+
+    def test_open_or_stringIO(self):
+        raise ValueError

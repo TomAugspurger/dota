@@ -2,6 +2,8 @@ import argparse
 import re
 import json
 
+from dota.helpers import open_or_stringIO
+
 _start_hero_pattern = '\t"npc_dota_hero_'
 _start_item_pattern = '\t"item_'
 # ability has 1 false positive `\t"Version"`
@@ -12,8 +14,10 @@ _start_ability_pattern = '\t"'
 # Three main parsers: abilities, items, heros
 # each parser writes its results to dota/*_parsed.json
 
-def parse_abilities():
-    with open('dota/npc_abilities.txt') as f:
+
+def parse_abilities(ability_file='dota/npc_abilities.txt'):
+
+    with open_or_stringIO(ability_file) as f:
         blocks = []
         for line in f:
             if (line.startswith(_start_ability_pattern) and
@@ -28,8 +32,8 @@ def parse_abilities():
         print("Parsed Abilities.")
 
 
-def parse_heroes():
-    with open('dota/npc_heroes.txt') as f:
+def parse_heroes(hero_file='dota/npc_heroes.txt'):
+    with open_or_stringIO(hero_file) as f:
         hero_blocks = []
         for line in f:
             if line.startswith(_start_hero_pattern):
@@ -43,8 +47,8 @@ def parse_heroes():
         print("Parsed Heros.")
 
 
-def parse_items():
-    with open('dota/items.txt') as f:
+def parse_items(item_file='dota/items.txt'):
+    with open_or_stringIO(item_file) as f:
 
         blocks = []
         for line in f:
@@ -99,7 +103,7 @@ def get_block(f, line, kind):
     elif kind == 'ability':
         name = line.strip().strip('"')
     elif kind == 'item':
-        name = line.split(_start_item_pattern)[1].rstrip('"\t\n')
+        name = line.split(_start_item_pattern)[9].rstrip('"\t\n')
 
     f.readline()  # {
     n_open = 1

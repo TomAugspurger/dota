@@ -4,9 +4,15 @@ import unittest
 from unittest.mock import patch
 from os.path import expanduser
 
+try:
+    from io import StringIO
+except ImportError:
+    from StringIO import StringIO
+
+
 from dota.api import API, HistoryResponse, DetailsResponse
 from dota.scripts import get_details_by_id
-
+import dota.scripts.parsers as p
 
 class TestGetByID(unittest.TestCase):
 
@@ -69,3 +75,113 @@ class TestGetByID(unittest.TestCase):
 
 #     # def test_fetch_new_match_ids(match_ids_path):
 #     #     # mocked
+
+
+class TestParsers(unittest.TestCase):
+    # the tabbing and newlining is important
+
+    def setUp(self):
+        self.ex_hero = """"npc_dota_hero_antimage"
+        {
+            // General
+            //-------------------------------------------------------------------------------------------------------------
+            "HeroID"                    "1"                                                     // unique ID number for this hero.  Do not change this once established or it will invalidate collected stats.
+            "Ability4"                  "antimage_mana_void"                    // Ability 4
+            "ItemSlots"
+            {
+                "0"
+                {
+                    "SlotIndex" "0"
+                    "SlotName"  "weapon"
+                    "SlotText"  "#LoadoutSlot_Weapon"
+                    "TextureWidth"      "128"
+                    "TextureHeight"     "256"
+                    "MaxPolygonsLOD0"   "400"
+                    "MaxPolygonsLOD1"   "350"
+                }
+
+            "Bot"
+            {
+                "HeroType"          "DOTA_BOT_HARD_CARRY"
+                "LaningInfo"
+                {
+                    "SoloDesire"            "1"
+                }
+            }
+        }
+        """
+        self.ex_item = """\t"item_blink"
+    {
+        // General
+        //-------------------------------------------------------------------------------------------------------------
+        "ID"                            "1"                                                     // unique ID number for this item.  Do not change this once established or it will invalidate collected stats.
+        "AbilityName"                   "item_blink"
+        "AbilitySpecial"
+        {
+            "01"
+            {
+                "var_type"              "FIELD_INTEGER"
+                "blink_range"           "1200"
+            }
+        }
+    }"""
+        self.ex_ability = """\t"antimage_blink"
+    {
+        // General
+        //-------------------------------------------------------------------------------------------------------------
+        "ID"                    "5004"                                                      // unique ID number for this ability.  Do not change this once established or it will invalidate collected stats.
+        "AbilityName"                   "antimage_blink"
+        {
+            "01"
+            {
+                "var_type"              "FIELD_INTEGER"
+                "blink_range"           "1000 1075 1150 1150"
+            }
+
+        }
+    }"""
+
+    def test_parse_hero(self):
+        f = StringIO(self.ex_hero)
+        line = f.readline()
+        result = p.get_ability_block(f, line)
+        expected = [('name', 'npc_dota_hero_antimage'),
+                    ('HeroID', '1'),
+                    ('Ability4', 'antimage_mana_void'),
+                    ('SlotIndex', '0'),
+                    ('SlotName', 'weapon'),
+                    ('SlotText', '#LoadoutSlot_Weapon'),
+                    ('TextureWidth', '128'),
+                    ('TextureHeight', '256'),
+                    ('MaxPolygonsLOD0', '400'),
+                    ('MaxPolygonsLOD1', '350'),
+                    ('HeroType', 'DOTA_BOT_HARD_CARRY'),
+                    ('SoloDesire', '1')]
+        self.assertEqual(result, expected)
+        f.close()
+
+    def test_parse_item(self):
+        f = StringIO(self.ex_item)
+        line = f.readline()
+        result = p.get_item_block(f, line)
+        expected = [('name', 'blink'),
+                    ('ID', '1'),
+                    ('AbilityName', 'item_blink'),
+                    ('var_type', 'FIELD_INTEGER'),
+                    ('blink_range', '1200')]
+        self.assertEqual(result, expected)
+        f.close()
+
+    def test_parse_ability(self):
+        f = StringIO(self.ex_ability)
+        line = f.readline()
+        result = p.get_ability_block(f, line)
+        expected = [('name', 'antimage_blink'),
+                    ('ID', '5004'),
+                    ('AbilityName', 'antimage_blink'),
+                    ('var_type', 'FIELD_INTEGER'),
+                    ('blink_range', '1000 1075 1150 1150')]
+
+        self.assertEqual(result, expected)
+        f.close()
+
