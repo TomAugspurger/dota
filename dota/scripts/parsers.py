@@ -103,7 +103,7 @@ def get_block(f, line, kind):
     elif kind == 'ability':
         name = line.strip().strip('"')
     elif kind == 'item':
-        name = line.split(_start_item_pattern)[9].rstrip('"\t\n')
+        name = line.split(_start_item_pattern)[1].rstrip('"\t\n')
 
     f.readline()  # {
     n_open = 1

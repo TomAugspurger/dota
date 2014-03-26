@@ -2,8 +2,9 @@
 
 import pathlib
 import unittest
+import io
 
-from dota.helpers import cached_games
+from dota.helpers import cached_games, open_or_stringIO
 
 
 class TestHelpers(unittest.TestCase):
@@ -27,4 +28,11 @@ class TestHelpers(unittest.TestCase):
         pathlib.Path('1234.json').unlink()
 
     def test_open_or_stringIO(self):
-        raise ValueError
+        fileobj = open_or_stringIO('1234.json')
+        self.assertIsInstance(fileobj, io.TextIOWrapper)
+
+        stringobj = open_or_stringIO("fakefile")
+        self.assertIsInstance(stringobj, io.StringIO)
+
+        stringobj = open_or_stringIO("1234.json", as_string=True)
+        self.assertIsInstance(stringobj, io.StringIO)

@@ -184,4 +184,3 @@ class TestParsers(unittest.TestCase):
 
         self.assertEqual(result, expected)
         f.close()
-
