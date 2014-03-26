@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import pathlib
-
+from datetime import datetime
 
 import pandas as pd
 from sqlalchemy import (Boolean, Column, Integer, String, create_engine,
@@ -250,6 +250,7 @@ def update_db(data_path):
 
 #-----------------------------------------------------------------------------
 # Cookbookish stuff
+# Every function should have a session as the first parameter.
 
 
 def count_player_games(session):
@@ -257,3 +258,38 @@ def count_player_games(session):
         group_by(PlayerGame.account_id).\
         order_by(func.count(PlayerGame.account_id)).all()
     return count
+
+
+def filter_by_patch(session, start='6.80', stop=None):
+    """
+
+
+    Parameters
+    ----------
+    session : Session
+    start : str. defaults to '6.80'
+        patch number.
+    stop : str or None
+        If None then includes all games since start. (Inclusive on the left
+        and exclusive on the right).
+
+
+    Returns
+    -------
+    Query
+
+    """
+    cutoff_times = {'6.80': int(datetime(2014, 1, 29).strftime('%s')),
+                    '6.79': int(datetime(2013, 10, 1).strftime('%s')),
+                    '6.78': int(datetime(2013, 6, 4).strftime('%s'))}
+    try:
+        start_s = cutoff_times[start]
+    except KeyError:
+        msg = ("Expected one of {}. Got {} instead".format(cutoff_times.keys(),
+                                                           start))
+        raise KeyError(msg)
+    query = session.query(Game).filter(Game.start_time > start_s)
+    if stop:
+        stop_s = cutoff_times[stop]
+        query = query.filter(Game.start_time < stop_s)
+    return query
