@@ -21,3 +21,5 @@ data
 *~
 
 dota/pro_match_ids.txt
+*.sublime-workspace
+*.sublime-project
