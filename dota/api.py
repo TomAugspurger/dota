@@ -84,6 +84,7 @@ class API:
     """
     HISTORY_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/V001/"
     MATCH_URL = "https://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/V001/"
+    TEAM_URL = "https://api.steampowered.com/IDOTA2Match_570/GetTeamInfoByTeamID/v001/"
 
     def __init__(self, key):
         self.key = key
@@ -192,6 +193,19 @@ class API:
     # @staticmethod
     # def match_ids(history):
     #     return [match['match_id'] for match in history['matches']]
+    def get_team_info(self, id):
+        """
+        Used to get data about teams that have been created in the client.
+
+        Parameters
+        ----------
+        id : team id
+        n : number of teams to return
+        """
+        params = {'key': self.key, 'start_at_team_id': id,
+                  'teams_requested': 1}
+        r = requests.get(self.TEAM_URL, params=params)
+        return TeamResponse(r.json()['result']['teams'][0])
 
 
 class Response:
@@ -493,6 +507,19 @@ class DetailsResponse(Response):
             df = pd.DataFrame(skills)
             df['ability'] = df.ability.astype(str).map(_ability_id_to_name)
         return df
+
+
+class TeamResponse(Response):
+
+    def __init__(self, resp):
+        # this probably is bad. Just ensure name on team_id
+        try:
+            resp['name']
+            resp['team_id']
+        except KeyError:
+            raise ValueError("Bad response.")
+        for attr in resp.keys():
+            setattr(self, attr, resp[attr])
 
 
 def update_hero_names(key):
