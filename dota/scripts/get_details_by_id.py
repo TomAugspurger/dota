@@ -14,23 +14,38 @@ parser.add_argument("--data_dir", type=str, help='Path to data directory.',
                     default='~/sandbox/dota/data/')
 
 
-if __name__ == '__main__':
-    args = parser.parse_args()
+def argparser(args):
     steam_id = args.id
     key_path = pathlib.Path(pathlib.os.path.expanduser(args.key_path))
     data_dir = pathlib.Path(pathlib.os.path.expanduser(args.data_dir))
+    return steam_id, key_path, data_dir
 
-    with key_path.open() as f:
-        key = json.load(f)['steam']
 
+def get_details(steam_id, key, data_dir):
+    """
+    Take a steam_id and check for new games. Download details of any
+    new games to data_dir. Primarily called from the command line.
+    """
     cached = cached_games(data_dir)
 
     h = api.API(key)
     hr = h.get_match_history(account_id=steam_id)
     new_ids = set(hr.match_ids) - set(cached)
 
+    if len(new_ids) == 0:
+        print("No new matches for {}".format(steam_id))
+
     for id_ in new_ids:
         dr = h.get_match_details(id_)
         with (data_dir / (str(dr.match_id) + '.json')).open('w') as f:
             json.dump(dr.resp, f)
         print("Added {}.".format(id_))
+
+if __name__ == '__main__':
+    args = parser.parse_args()
+    steam_id, key_path, data_dir = argparser(args)
+
+    with key_path.open() as f:
+        key = json.load(f)['steam']
+
+    get_details(steam_id, key, data_dir)
