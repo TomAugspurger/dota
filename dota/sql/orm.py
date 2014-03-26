@@ -14,10 +14,8 @@ from dota.helpers import cached_games
 
 Base = declarative_base()
 
-# association_table = Table('association', Base.metadata,
-#                           Column('match_id', Integer, ForeignKey('games.match_id')),
-#                           Column('player_id', Integer, ForeignKey('players.account_id'))
-#                           )
+#-----------------------------------------------------------------------------
+# ORM Classes
 
 
 class PlayerGame(Base):
@@ -163,6 +161,9 @@ class Team(Base):
     def __repr__(self):
         return "<Team {}>. {}".format(self.team_id, self.team_name)
 
+#-----------------------------------------------------------------------------
+# Helper functions for manipulation the db
+
 
 def make_engine(filepath='sqlite:///pro.db'):
 
@@ -220,16 +221,6 @@ def add_to_db(engine, games):
     return session
 
 
-def main():
-
-    p = pathlib.Path('../data/pro/')
-    games = filter(lambda x: x.suffix == '.json', p.iterdir())
-
-    engine = make_engine()
-    session = add_to_db(engine, games)
-    return engine, session
-
-
 def update_db(data_path):
     """
     Create an engine and session, query for existing game ids.
@@ -266,7 +257,3 @@ def count_player_games(session):
         group_by(PlayerGame.account_id).\
         order_by(func.count(PlayerGame.account_id)).all()
     return count
-
-if __name__ == '__main__':
-
-    main()

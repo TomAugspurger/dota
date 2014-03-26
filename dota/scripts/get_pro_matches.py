@@ -101,7 +101,7 @@ def get_pro_matches(id_store='pro_match_ids.txt',
 
     #--------------------------------------------------------------------------
     # Insert into pro.db
-    from examples.sqlalchemyORM import update_db
+    from dota.sql.orm import update_db
 
     update_db(data_path)
 
