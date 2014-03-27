@@ -556,6 +556,11 @@ class TeamResponse(Response):
         for attr in resp.keys():
             setattr(self, attr, resp[attr])
 
+        self.player_ids = [getattr(self, x) for x in
+                           ["player_0_account_id", "player_1_account_id",
+                            "player_2_account_id", "player_3_account_id",
+                            "player_4_account_id"]]
+
 
 def update_hero_names(key):
     h = API(key)
