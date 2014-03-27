@@ -332,6 +332,21 @@ class HistoryResponse(Response):
 
 
 class DetailsResponse(Response):
+
+    game_mode = {1: 'All Pick',
+                 2: 'Captains Mode',
+                 3: 'Random Draft',
+                 4: 'Single Draft',
+                 5: 'All Random',
+                 6: 'Intro?',
+                 7: 'Diretide',
+                 8: 'Reverse Captains Mode',
+                 9: 'Greeviling',
+                 10: 'Tutorial',
+                 11: 'Mid Only',
+                 12: 'Least Played',
+                 13: 'New Player Pool'}
+
     """
     Detailed response of an individual game.
 
@@ -377,6 +392,26 @@ class DetailsResponse(Response):
         self.radiant_name = resp.get('radiant_name')
         self.dire_team_id = resp.get('dire_team_id')
         self.radiant_team_id = resp.get('radiant_team_id')
+        self.game_mode = resp.get('game_mode')
+        self.picks_bans = resp._parse_picks_bans(resp.get('picks_bans'))
+
+    @staticmethod
+    def from_json(f_obj):
+        """
+        Initialize from a JSON file.
+        """
+
+        with open(f_obj) as f:
+            return DetailsResponse(json.load(f))
+
+    @staticmethod
+    def _parse_picks_bans(resp):
+        """
+        Only available in CM (maybe captains draft too?)
+        """
+        if resp:
+            df = pd.DataFrame(resp['picks_bans'])
+            return df
 
     def by_player(self, key):
         """
