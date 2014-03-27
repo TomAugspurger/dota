@@ -109,6 +109,7 @@ class Game(Base):
     human_players = Column(Integer)
 
     players = relationship("PlayerGame", backref="games")
+    teams = relationship("Team", backref="games")
 
     def __init__(self, resp):
         self.match_id = resp['match_id']
@@ -148,10 +149,13 @@ class Player(Base):
 
 class Team(Base):
     # TODO: relate players to teams, and back
+    # TODO: map from existing TeamResponse via mixin?
     __tablename__ = 'teams'
 
     team_id = Column(Integer, primary_key=True)
     team_name = Column(String)
+    players = relationship("Player", backref="teams")
+    games = relationship("Game", backref="teams")
 
     def __init__(self, resp, side='radiant'):
 
