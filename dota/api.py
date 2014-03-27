@@ -377,7 +377,13 @@ class DetailsResponse(Response):
         for p in resp['players']:
             if p.get('account_id') == _PRIVATE:
                 p['account_id'] = np.nan
-        self.player_ids = [player.get('account_id', np.nan) for player in resp['players']]
+        self.player_ids = {'radiant': [], 'dire': []}
+        for player in resp['players']:
+            if player['player_slot'] < 5:
+                self.player_ids['radiant'].append(player.get('account_id', np.nan))
+            else:
+                self.player_ids['dire'].append(player.get('account_id', np.nan))
+
         self.hero_name_to_id = _hero_names_to_id
         self.hero_id_to_names = {v: k for k, v in _hero_names_to_id.items()}
 
@@ -393,7 +399,7 @@ class DetailsResponse(Response):
         self.dire_team_id = resp.get('dire_team_id')
         self.radiant_team_id = resp.get('radiant_team_id')
         self.game_mode = resp.get('game_mode')
-        self.picks_bans = resp._parse_picks_bans(resp.get('picks_bans'))
+        self.picks_bans = self._parse_picks_bans(resp.get('picks_bans'))
 
     @staticmethod
     def from_json(f_obj):
@@ -405,13 +411,20 @@ class DetailsResponse(Response):
             return DetailsResponse(json.load(f))
 
     @staticmethod
-    def _parse_picks_bans(resp):
+    def _parse_picks_bans(pick_bans):
         """
         Only available in CM (maybe captains draft too?)
         """
-        if resp:
-            df = pd.DataFrame(resp['picks_bans'])
+        if pick_bans:
+            df = pd.DataFrame(pick_bans)
             return df
+
+    @staticmethod
+    def rep_team(x):
+        if x < 5:
+            return 'Radiant'
+        else:
+            return 'Dire'
 
     def by_player(self, key):
         """
@@ -462,13 +475,7 @@ class DetailsResponse(Response):
                                              str(x)))
         df.index.set_names(['hero'], inplace=True)
 
-        def rep_team(x):
-            if x < 5:
-                return 'Radiant'
-            else:
-                return 'Dire'
-
-        df['team'] = df['player_slot'].apply(rep_team)
+        df['team'] = df['player_slot'].apply(DetailsResponse.rep_team)
         df['win'] = df['team'] == winner
         df = df.sort('team', ascending=False)
 

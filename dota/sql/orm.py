@@ -109,6 +109,7 @@ class Game(Base):
     human_players = Column(Integer)
 
     players = relationship("PlayerGame", backref="games")
+    teams = relationship("Team", backref="games")
 
     def __init__(self, resp):
         self.match_id = resp['match_id']
@@ -140,18 +141,18 @@ class Player(Base):
     __tablename__ = 'players'
 
     account_id = Column(Integer, primary_key=True)
-    handle = Column(String)
+    name = Column(String)
 
     def __repr__(self):
-        return "<Player {}>. {}".format(self.account_id, self.handle)
+        return "<Player {}>. {}".format(self.account_id, self.name)
 
 
 class Team(Base):
-    # TODO: relate players to teams, and back
     __tablename__ = 'teams'
 
     team_id = Column(Integer, primary_key=True)
     team_name = Column(String)
+    players = relationship("TeamPlayer", backref="teams")
 
     def __init__(self, resp, side='radiant'):
 
@@ -160,6 +161,24 @@ class Team(Base):
 
     def __repr__(self):
         return "<Team {}>. {}".format(self.team_id, self.team_name)
+
+
+class TeamPlayer(Base):
+
+    __tablename__ = 'teamplayers'
+
+    team_id = Column(Integer, ForeignKey('teams.team_id'), primary_key=True)
+    player_id = Column(Integer, ForeignKey('players.account_id'), primary_key=True)
+
+    # team_name = Column(String, ForeignKey('teams.team_name'))
+    # player_name = Column(String, ForeignKey('players.name'))
+    player = relationship("Player", backref="teamplayers")
+
+    def __repr__(self):
+        return "<Team {} ({}). Player {} ({})".format(self.team_id,
+                                                      getattr(self, 'team_name', None),
+                                                      self.player_id,
+                                                      getattr(self, 'player_name', None))
 
 #-----------------------------------------------------------------------------
 # Helper functions for manipulation the db
@@ -199,13 +218,24 @@ def add_to_db(engine, games):
                 Team.team_id == team.team_id).first()
             if existing_team is None:
                 session.add(team)
+            # Add TeamPlayers
+            for player in d.player_ids[side]:
+                if pd.isnull(player):
+                    continue
+                tp = TeamPlayer(team_id=getattr(d, side + '_team_id'),
+                                player_id=player)
+                existing_tp = session.query(TeamPlayer).filter(
+                    Team.team_id == team.team_id).filter(
+                    Player.account_id == player).first()
+                if existing_tp is None:
+                    session.add(tp)
 
         for player in d.resp['players']:
             pg = PlayerGame(d.match_id, player)
             if pd.isnull(pg.account_id):
                 continue
 
-            pl = Player(account_id=pg.account_id)
+            pl = Player(account_id=pg.account_id, )
             existing_player = session.query(Player).filter(
                 Player.account_id == pl.account_id).first()
             if existing_player is None:
