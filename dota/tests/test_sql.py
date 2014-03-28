@@ -3,7 +3,7 @@ import unittest
 
 from sqlalchemy.orm import sessionmaker
 
-from dota.sql.orm import Game, Player, PlayerGame
+from dota.sql.orm import Game, Player, PlayerGame, Team
 from dota.sql import orm
 
 
@@ -20,6 +20,7 @@ class TestORM(unittest.TestCase):
         session.add(fake_game())
         session.add(fake_playergame())
         session.add(Player(account_id=1, name='name'))
+        session.add(fake_team())
         session.commit()
         self.session = session
 
@@ -99,3 +100,10 @@ def fake_game(**kwargs):
          'human_players': 1}
     d.update(kwargs)
     return Game(d)
+
+
+def fake_team(**kwargs):
+    d = {'dire_team_id': 1,
+         'dire_name': 'NaVi'}
+    d.update(kwargs)
+    return Team(d)

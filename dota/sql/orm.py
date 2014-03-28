@@ -86,10 +86,10 @@ class Game(Base):
     __tablename__ = 'games'
 
     match_id = Column(Integer, primary_key=True)
-    dire_team_id = Column(Integer, ForeignKey('teams.team_id'))
-    dire_team_name = Column(Integer, ForeignKey('teams.team_name'))
-    radiant_team_id = Column(Integer, ForeignKey('teams.team_id'))
-    radiant_team_name = Column(Integer, ForeignKey('teams.team_name'))
+    dire_team_id = Column(Integer, ForeignKey('teams.team_id'), primary_key=True)
+    # dire_team_name = Column(Integer, ForeignKey('teams.team_name'))
+    radiant_team_id = Column(Integer, ForeignKey('teams.team_id'), primary_key=True)
+    # radiant_team_name = Column(Integer, ForeignKey('teams.team_name'))
 
     start_time = Column(Integer)
     match_seq_num = Column(Integer)
@@ -109,7 +109,7 @@ class Game(Base):
     human_players = Column(Integer)
 
     players = relationship("PlayerGame", backref="games")
-    teams = relationship("Team", backref="games")
+    teams = relationship("TeamGame", backref="games")
 
     def __init__(self, resp):
         self.match_id = resp['match_id']
@@ -179,6 +179,19 @@ class TeamPlayer(Base):
                                                       getattr(self, 'team_name', None),
                                                       self.player_id,
                                                       getattr(self, 'player_name', None))
+
+
+class TeamGame(Base):
+
+    __tablename__ = 'teamgames'
+
+    team_id = Column(Integer, ForeignKey('teams.team_id'), primary_key=True)
+    match_id = Column(Integer, ForeignKey('games.match_id'), primary_key=True)
+    team = relationship("Team", backref='teamgames')
+
+    def __repr__(self):
+        return "<Team {}. Game {}.".format(self.team_id,
+                                           self.match_id)
 
 #-----------------------------------------------------------------------------
 # Helper functions for manipulation the db
