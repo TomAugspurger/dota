@@ -86,9 +86,9 @@ class Game(Base):
     __tablename__ = 'games'
 
     match_id = Column(Integer, primary_key=True)
-    dire_team_id = Column(Integer, ForeignKey('teams.team_id'), primary_key=True)
+    dire_team_id = Column(Integer, ForeignKey('teams.team_id'))
     # dire_team_name = Column(Integer, ForeignKey('teams.team_name'))
-    radiant_team_id = Column(Integer, ForeignKey('teams.team_id'), primary_key=True)
+    radiant_team_id = Column(Integer, ForeignKey('teams.team_id'))
     # radiant_team_name = Column(Integer, ForeignKey('teams.team_name'))
 
     start_time = Column(Integer)
