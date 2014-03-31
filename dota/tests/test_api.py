@@ -47,8 +47,8 @@ class TestAPI(unittest.TestCase):
     @network
     def test_get_team_info(self):
         TEAM = 111474
-        team = self.h.test_get_team_info(TEAM)
-        self.assertEqual(team.account_id, TEAM)
+        team = self.h.get_team_info(TEAM)
+        self.assertEqual(team.team_id, TEAM)
 
 
 class TestHistoryResponse(unittest.TestCase):
