@@ -2,8 +2,9 @@
 
 from __future__ import division
 
-import itertools as it
 import json
+import itertools as it
+from os.path import dirname, abspath
 
 import arrow
 import requests
@@ -11,7 +12,8 @@ from requests.exceptions import HTTPError
 import pandas as pd
 import numpy as np
 
-from os.path import dirname, abspath
+import dota
+from dota import helpers
 
 _hero_path = dirname(abspath(__file__)) + "/heroes_parsed.json"
 _current_hero_path = dirname(abspath(__file__)) + "/current_heroes.json"
@@ -26,8 +28,8 @@ with open(_hero_path) as f:
     # updated hero list
 with open(_current_hero_path) as f:
     d = json.load(f)['heroes']
-    _hero_names_to_id = {x['name'].split('npc_dota_hero_')[1]: x['id'] for x in d}
-    _hero_id_to_names = {v: k for k, v in _hero_names_to_id.items()}
+    _hero_name_to_id = {x['name'].split('npc_dota_hero_')[1]: x['id'] for x in d}
+    _hero_id_to_name = {v: k for k, v in _hero_name_to_id.items()}
 
 with open(_abilities_path) as f:
     _abilties = json.load(f)
@@ -207,6 +209,38 @@ class API:
         r = requests.get(self.TEAM_URL, params=params)
         return TeamResponse(r.json()['result']['teams'][0])
 
+    @staticmethod
+    def get_item_image(item, size='lg'):
+        """
+        item : int or str
+            if int then item_id. if str then name of item
+        outfile:
+            path to file to write the bytes to disk.
+
+        Returns
+        -------
+        handle : _io.TextIOWrapper
+            open handle to resource. Caches result
+        """
+        # implemented in helpers.load_resources. Here for convenience
+        return helpers.load_resource(item, kind='item', size=size)
+
+    @staticmethod
+    def get_hero_image(hero, size='lg'):
+        """
+        hero : int or str
+            if int then hero_id. if str then name of hero
+        outfile:
+            path to file to write the bytes to disk.
+
+        Returns
+        -------
+        handle : _io.TextIOWrapper
+            open handle to resource. Caches result
+        """
+        # implemented in helpers.load_resources. Here for convenience
+        return dota.helpers.load_resource(hero, kind='hero', size=size)
+
 
 class Response:
     """
@@ -384,8 +418,8 @@ class DetailsResponse(Response):
             else:
                 self.player_ids['dire'].append(player.get('account_id', np.nan))
 
-        self.hero_name_to_id = _hero_names_to_id
-        self.hero_id_to_names = {v: k for k, v in _hero_names_to_id.items()}
+        self.hero_name_to_id = _hero_name_to_id
+        self.hero_id_to_names = _hero_id_to_name
 
         self.negative_votes = self.resp['negative_votes']
         self.positive_votes = self.resp['positive_votes']
@@ -471,8 +505,7 @@ class DetailsResponse(Response):
         except KeyError:
             pass
         df = df.rename(index=lambda x:
-                       _hero_id_to_names.get(int(x),
-                                             str(x)))
+                       _hero_id_to_name.get(int(x), str(x)))
         df.index.set_names(['hero'], inplace=True)
 
         df['team'] = df['player_slot'].apply(DetailsResponse.rep_team)
