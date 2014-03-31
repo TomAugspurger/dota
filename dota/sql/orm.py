@@ -42,6 +42,7 @@ class PlayerGame(Base):
     gold_per_min = Column(Integer)
     hero_healing = Column(Integer)
     player_slot = Column(Integer)
+    side = Column(Integer)  # Radiant or Dire
     last_hits = Column(Integer)
     xp_per_min = Column(Integer)
     tower_damage = Column(Integer)
@@ -76,6 +77,10 @@ class PlayerGame(Base):
         self.tower_damage = resp['tower_damage']
         self.kills = resp['kills']
         self.leaver_status = resp['leaver_status']
+        if self.player_slot < 5:
+            self.side = 'radiant'
+        else:
+            self.side = 'dire'
 
     def __repr__(self):
         return "<Player {}>, <Game {}>".format(self.account_id, self.match_id)
