@@ -90,12 +90,15 @@ def load_resource(name, kind, size='lg'):
 
 def _format_resource_name(name, kind, size):
     if isinstance(name, int):
-        name_ = getattr(dota.api, '_' + kind + '_id_to_name')[name].strip(kind)
+        if kind == 'item':
+            name_ = getattr(dota.api, '_item_id_to_name')[str(name)].strip(kind)
+        else:
+            name_ = getattr(dota.api, '_hero_id_to_name')[name].strip(kind)
     else:
         name_ = name
 
-    if not name_ in getattr(dota.api, '_' + kind + '_name_to_id').keys():
-        raise KeyError("Unrecognized name {}".format(name))
+    # if not name_ in getattr(dota.api, '_' + kind + '_name_to_id').keys():
+    #     raise KeyError("Unrecognized name {}".format(name))
 
     if size == 'full':
         ext = 'jpg'
