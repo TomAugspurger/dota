@@ -8,6 +8,7 @@ except ImportError:
     from StringIO import StringIO
 
 import requests
+import numpy as np
 
 import dota.api
 
@@ -50,6 +51,13 @@ def open_or_stringIO(f, as_string=False):
         return StringIO(f)
 
 
+def maybe_load_resource(name, kind, size='lg'):
+    try:
+        return load_resource(name, kind=kind, size=size)
+    except KeyError:
+        return str(name)
+
+
 def load_resource(name, kind, size='lg'):
     """
     Check /resources/kind/name for an image. If it exists return that image.
@@ -62,8 +70,8 @@ def load_resource(name, kind, size='lg'):
 
     Returns:
 
-    handel : _io.TextIOWrapper
-        handle to file
+    handel : str
+        path to file
     """
     # construct path
     name_ = _format_resource_name(name, kind, size)
@@ -85,15 +93,12 @@ def load_resource(name, kind, size='lg'):
             msg = "{} is not cached and could not fetch from Valve".format(name)
             raise ValueError(msg)
 
-    return cachefile.open('rb')
+    return str(cachefile)
 
 
 def _format_resource_name(name, kind, size):
-    if isinstance(name, int):
-        if kind == 'item':
-            name_ = getattr(dota.api, '_item_id_to_name')[str(name)].strip(kind)
-        else:
-            name_ = getattr(dota.api, '_hero_id_to_name')[name].strip(kind)
+    if isinstance(name, (int, np.int64)):
+        name_ = getattr(dota.api, '_' + kind + '_id_to_name')[name].strip(kind)
     else:
         name_ = name
 

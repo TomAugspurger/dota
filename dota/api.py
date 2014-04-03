@@ -38,7 +38,7 @@ with open(_abilities_path) as f:
 
 with open(_items_path) as f:
     _items = json.load(f)
-    _item_id_to_name = {v['ID']: k for k, v in _items.items()}
+    _item_id_to_name = {int(v['ID']): k for k, v in _items.items()}
     _item_name_to_id = {k: v['ID'] for k, v in _items.items()}
 
 
@@ -223,7 +223,7 @@ class API:
             open handle to resource. Caches result
         """
         # implemented in helpers.load_resources. Here for convenience
-        return helpers.load_resource(item, kind='item', size=size)
+        return helpers.maybe_load_resource(item, kind='item', size=size)
 
     @staticmethod
     def get_hero_image(hero, size='lg'):
@@ -239,7 +239,7 @@ class API:
             open handle to resource. Caches result
         """
         # implemented in helpers.load_resources. Here for convenience
-        return dota.helpers.load_resource(hero, kind='hero', size=size)
+        return dota.helpers.maybe_load_resource(hero, kind='hero', size=size)
 
 
 class Response:
