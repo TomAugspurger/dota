@@ -296,6 +296,44 @@ def update_db(data_path):
 # Every function should have a session as the first parameter.
 
 
+def count_by(session, item, by):
+    """
+    Count the number of times `item` appears, by `by`.
+
+    Parameters
+    ----------
+
+    session
+    item : str
+    by : str
+
+    Returns
+    -------
+
+    counts : Series
+
+    Examples
+    --------
+    count_by(session, 'player', 'game')
+    """
+    normalize = lambda x: x.lower().rstrip('s')
+
+    item = normalize(item)
+    by = normalize(by)
+
+    # only working one.
+    dispatch = {('player', 'game'): PlayerGame.account_id}  #,
+                # ('team', 'game'): TeamGame.team_id,
+                # ('player', 'team'): TeamPlayer.player_id}
+    selector = dispatch[(item, by)]
+    count = session.query(func.count(selector), selector).group_by(selector).\
+        order_by(func.count(selector)).all()
+    count = pd.DataFrame(count, columns=[item, by])
+    count = count.set_index(by)[item].value_counts()
+    count.name = item
+    return count
+
+
 def count_player_games(session):
     count = session.query(func.count(PlayerGame.account_id), PlayerGame.account_id).\
         group_by(PlayerGame.account_id).\
