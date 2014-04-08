@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 import pathlib
+from pathlib import Path
 import unittest
 import io
 
@@ -17,10 +18,11 @@ class TestHelpers(unittest.TestCase):
 
         p = pathlib.Path('.')
         result = sorted(cached_games(p))
-        expected = [1234, 12345678]
+        expected = [Path('1234.json'), Path('details12345678.json')]
         self.assertEqual(result, expected)
 
-        result = sorted(cached_games(p))
+        result = sorted(cached_games(p, full_path=False))
+        expected = [1234, 12345678]
         self.assertEqual(result, expected)
 
     def tearDown(self):

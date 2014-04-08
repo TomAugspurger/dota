@@ -7,7 +7,8 @@ except ImportError:
     from StringIO import StringIO
 
 
-def cached_games(directory, regex=r"[\w\/]*?(\d+)\.json"):
+def cached_games(directory, regex=r"[\w\/]*?(\d+)\.json",
+                 full_path=True):
     """
     Return the match ids of all games.
 
@@ -28,7 +29,8 @@ def cached_games(directory, regex=r"[\w\/]*?(\d+)\.json"):
 
     regex = re.compile(regex)
     match_ids = filter(lambda x: regex.match(str(x)), directory.iterdir())
-    match_ids = [int(regex.match(str(x)).groups()[0]) for x in match_ids]
+    if not full_path:
+        match_ids = (int(regex.match(str(x)).groups()[0]) for x in match_ids)
     return match_ids
 
 
