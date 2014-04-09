@@ -30,9 +30,9 @@ with open(_current_hero_path) as f:
     _hero_id_to_names = {v: k for k, v in _hero_names_to_id.items()}
 
 with open(_abilities_path) as f:
-    _abilties = json.load(f)
-    _ability_id_to_name = {v['ID']: k for k, v in _abilties.items()}
-    _ability_name_to_id = {k: v['ID'] for k, v in _abilties.items()}
+    _abilities = json.load(f)
+    _ability_id_to_name = {v['ID']: k for k, v in _abilities.items()}
+    _ability_name_to_id = {k: v['ID'] for k, v in _abilities.items()}
 
 with open(_items_path) as f:
     _items = json.load(f)
