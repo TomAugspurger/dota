@@ -20,9 +20,6 @@ class TestHelpers(unittest.TestCase):
         expected = [Path('1234.json'), Path('details12345678.json')]
         self.assertEqual(result, expected)
 
-        result = sorted(cached_games(p))
-        self.assertEqual(result, expected)
-
     def tearDown(self):
         Path('details12345678.json').unlink()
         Path('1234.json').unlink()

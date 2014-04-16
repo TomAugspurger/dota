@@ -285,8 +285,7 @@ def update_db(data_path):
     except IndexError:  # new db
         sql_games = set()
     cached = cached_games(data_path.resolve())  # JSON files on disk
-    new_games = set(cached) - sql_games
-    new_games = (data_path / pathlib.Path(str(game) + '.json') for game in new_games)
+    new_games = (x for x in cached if int(x.stem) not in sql_games)
 
     session = add_to_db(engine, new_games)
     return engine, session

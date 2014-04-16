@@ -41,7 +41,6 @@ def fetch_new_match_ids(match_ids_path):
 
     ids = (x[2].split('?q=')[-1] + '\n' for x in links)
     new_ids = [x for x in ids if x not in old_ids]
-    ids = 1
     return new_ids
 
 
@@ -52,8 +51,8 @@ def get_new_details(match_ids, data_path):
 
     h = api.API(key=key)
 
-    cached = cached_games(data_path)
-    new_matches = [x for x in match_ids if int(x) not in cached]
+    cached = [int(x.stem) for x in cached_games(data_path)]  # fragile...
+    new_matches = (x for x in match_ids if int(x) not in cached)
     details = {mid: h.get_match_details(mid) for mid in new_matches}
     return details
 

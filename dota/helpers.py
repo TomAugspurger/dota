@@ -19,7 +19,7 @@ def cached_games(directory, regex=r"[\w\/]*?(\d+)\.json"):
     Returns
     -------
 
-    list of strs
+    match_ids : iterable of Paths
 
     """
     if not isinstance(directory, (pathlib.Path, pathlib.PosixPath,
@@ -28,7 +28,6 @@ def cached_games(directory, regex=r"[\w\/]*?(\d+)\.json"):
 
     regex = re.compile(regex)
     match_ids = filter(lambda x: regex.match(str(x)), directory.iterdir())
-    match_ids = [int(regex.match(str(x)).groups()[0]) for x in match_ids]
     return match_ids
 
 
