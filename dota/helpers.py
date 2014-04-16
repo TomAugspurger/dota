@@ -92,3 +92,12 @@ def pb_previous_pbs(df, order=0):
                        index=df.order.iloc[:order].values).T
     pbs = pbs.rename(columns=lambda x: 'pb_' + str(x))
     return pbs
+
+
+def pb_only_complete_drafts(df):
+    """
+    Remove any matches where at least one team_id is NaN.
+    """
+    good_ids = (~pd.isnull(df['team_id'])).groupby(df['match_id']).all()
+    good_ids = good_ids[good_ids].index
+    return df.query('match_id in @good_ids')

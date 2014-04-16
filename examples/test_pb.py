@@ -42,3 +42,16 @@ class TestExtraction(unittest.TestCase):
                                        key=lambda x: int(x.split('_')[-1]))]
             result = h.pb_previous_pbs(self.df, i)
             tm.assert_frame_equal(result, expected)
+
+    def test_only_complete(self):
+
+        result = h.pb_only_complete_drafts(self.df)
+        tm.assert_frame_equal(result, self.df)
+
+        bad = self.df.copy()
+        bad.loc[0, 'team_id'] = np.nan
+        bad['match_id'] = bad['match_id'] + 1
+        bad = pd.concat([bad, self.df])
+
+        result = h.pb_only_complete_drafts(bad)
+        tm.assert_frame_equal(result, self.df, check_dtype=False)
