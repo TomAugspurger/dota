@@ -6,6 +6,8 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import pandas as pd
+
 
 def cached_games(directory, regex=r"[\w\/]*?(\d+)\.json"):
     """
@@ -43,3 +45,50 @@ def open_or_stringIO(f, as_string=False):
             return StringIO(f)
     except OSError:
         return StringIO(f)
+
+
+def pb_team_id(df, order=0):
+    return df.team_id_f.iloc[order]
+
+
+def pb_opponent_id(df, order=0):
+    """
+    Get the opponent id from a pick / ban Frame.
+
+    Parameters
+    ----------
+    df : DataFrame
+        formatted like a pick / ban frame
+    order : int
+        pick / ban order (1 .. 19)
+
+    Returns
+    -------
+    opponent_id : int
+    """
+    x = df['team_id_f'].unique()
+    other_team = {x[0]: x[1], x[1]: x[0]}
+    return df.team_id_f.map(other_team).iloc[order]
+
+
+def pb_previous_pbs(df, order=0):
+    """
+    Get the hero id's for all prior picks and bans.
+
+    Parameters
+    ----------
+    df : DataFrame
+        formatted like a pick / ban frame
+    order : int
+        pick / ban order (1 .. 19)
+
+    Returns
+    -------
+    prior_pbs : Series
+        index labels are pick0, b0 ... or just order?
+        values are hero_id_f
+    """
+    pbs = pd.DataFrame(df.hero_id_f.iloc[:order],
+                       index=df.order.iloc[:order].values).T
+    pbs = pbs.rename(columns=lambda x: 'pb_' + str(x))
+    return pbs
