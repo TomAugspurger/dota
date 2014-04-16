@@ -31,7 +31,7 @@ def get_details(steam_id, key, data_dir):
 
     h = api.API(key)
     hr = h.get_match_history(account_id=steam_id)
-    new_ids = set(hr.match_ids) - set((int(x.stem) for x in cached))
+    new_ids = set(hr.match_ids) - set((int(x.stem.strip('details')) for x in cached))
 
     if len(new_ids) == 0:
         print("No new matches for {}".format(steam_id))
