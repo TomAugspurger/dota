@@ -88,7 +88,7 @@ def pb_previous_pbs(df, order=0):
         index labels are pick0, b0 ... or just order?
         values are hero_id_f
     """
-    pbs = pd.DataFrame(df.hero_id_f.iloc[:order],
+    pbs = pd.DataFrame(df.hero_id_f.iloc[:order].values,
                        index=df.order.iloc[:order].values).T
     pbs = pbs.rename(columns=lambda x: 'pb_' + str(x))
     return pbs
@@ -97,7 +97,12 @@ def pb_previous_pbs(df, order=0):
 def pb_only_complete_drafts(df):
     """
     Remove any matches where at least one team_id is NaN.
+    Or where the draft has fewer that 20 picks / bans.
     """
     good_ids = (~pd.isnull(df['team_id'])).groupby(df['match_id']).all()
     good_ids = good_ids[good_ids].index
+
+    full_drafts = df.groupby('match_id').apply(len)
+    full_drafts = full_drafts[full_drafts == 20].index
+    good_ids = good_ids & full_drafts
     return df.query('match_id in @good_ids')
