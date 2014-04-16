@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import json
 import pathlib
 import argparse
@@ -30,10 +31,12 @@ def get_details(steam_id, key, data_dir):
 
     h = api.API(key)
     hr = h.get_match_history(account_id=steam_id)
-    new_ids = set(hr.match_ids) - set(cached)
+    new_ids = set(hr.match_ids) - set((int(x.stem) for x in cached))
 
     if len(new_ids) == 0:
         print("No new matches for {}".format(steam_id))
+
+    print("Fetching details on {} games".format(len(new_ids)))
 
     for id_ in new_ids:
         dr = h.get_match_details(id_)
