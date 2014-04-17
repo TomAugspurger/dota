@@ -1,6 +1,10 @@
+# -*- coding: utf-8 -*-
 import argparse
 import re
 import json
+from functools import partial
+
+import requests
 
 from dota.helpers import open_or_stringIO
 
@@ -15,7 +19,7 @@ _start_ability_pattern = '\t"'
 # each parser writes its results to dota/*_parsed.json
 
 
-def parse_abilities(ability_file='dota/npc_abilities.txt'):
+def parse_abilities(ability_file='../npc_abilities.txt'):
 
     with open_or_stringIO(ability_file) as f:
         blocks = []
@@ -27,12 +31,12 @@ def parse_abilities(ability_file='dota/npc_abilities.txt'):
 
     ability_d = _construct_json(blocks)
 
-    with open("dota/abilities_parsed.json", 'w') as f:
+    with open("../abilities_parsed.json", 'w') as f:
         json.dump(ability_d, f)
         print("Parsed Abilities.")
 
 
-def parse_heroes(hero_file='dota/npc_heroes.txt'):
+def parse_heroes(hero_file='../npc_heroes.txt'):
     with open_or_stringIO(hero_file) as f:
         hero_blocks = []
         for line in f:
@@ -42,12 +46,12 @@ def parse_heroes(hero_file='dota/npc_heroes.txt'):
 
     hero_d = _construct_json(hero_blocks)
 
-    with open("dota/heroes_parsed.json", 'w') as f:
+    with open("../heroes_parsed.json", 'w') as f:
         json.dump(hero_d, f)
         print("Parsed Heros.")
 
 
-def parse_items(item_file='dota/items.txt'):
+def parse_items(item_file='../items.txt'):
     with open_or_stringIO(item_file) as f:
 
         blocks = []
@@ -57,7 +61,7 @@ def parse_items(item_file='dota/items.txt'):
                 blocks.append(block)
 
     item_d = _construct_json(blocks)
-    with open("dota/items_parsed.json", 'w') as f:
+    with open("../items_parsed.json", 'w') as f:
         json.dump(item_d, f)
         print("Parsed Items.")
 
@@ -124,9 +128,26 @@ def get_block(f, line, kind):
 
     return results
 
-parser = argparse.ArgumentParser()
-parser.add_argument('kind', choices=['items', 'heroes', 'abilities'])
+#-----------------------------------------------------------------------------
+# update raw files
 
+
+def update_files(kind):
+
+    urls = {'abilities': ("https://raw.githubusercontent.com/dotadelight/"
+                          "dota2-database/master/sources/npc_abilities.txt"),
+            'heroes': ("https://raw.githubusercontent.com/dotadelight/"
+                       "dota2-database/master/sources/npc_heroes.txt")}
+    r = requests.get(urls[kind])
+
+    with open('../npc_{}.txt'.format(kind), 'w') as f:
+        f.write(r.text)
+    print("Updated {}".format(kind))
+
+#-----------------------------------------------------------------------------
+parser = argparse.ArgumentParser()
+parser.add_argument('kind', choices=['items', 'heroes', 'abilities',
+                                     'update_abilities', 'update_heroes'])
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -134,6 +155,8 @@ if __name__ == '__main__':
 
     dispatch = {'items': parse_items,
                 'heroes': parse_heroes,
-                'abilities': parse_abilities
+                'abilities': parse_abilities,
+                'update_abilities': partial(update_files, 'abilities'),
+                'update_heroes': partial(update_files, 'heroes')
                 }
     dispatch[kind]()

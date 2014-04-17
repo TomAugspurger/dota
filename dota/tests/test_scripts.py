@@ -9,10 +9,13 @@ try:
 except ImportError:
     from StringIO import StringIO
 
+import requests
+from pandas.util.testing import network
 
 from dota.api import API, HistoryResponse, DetailsResponse
 from dota.scripts import get_details_by_id
 import dota.scripts.parsers as p
+
 
 class TestGetByID(unittest.TestCase):
 
