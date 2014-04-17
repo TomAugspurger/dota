@@ -1,12 +1,16 @@
 # -*- coding: utf-8 -*-
 import re
 import pathlib
+from itertools import chain
 try:
     from io import StringIO
 except ImportError:
     from StringIO import StringIO
 
+import numpy as np
 import pandas as pd
+
+import dota.api as a
 
 
 def cached_games(directory, regex=r"[\w\/]*?(\d+)\.json"):
@@ -106,3 +110,36 @@ def pb_only_complete_drafts(df):
     full_drafts = full_drafts[full_drafts == 20].index
     good_ids = good_ids & full_drafts
     return df.query('match_id in @good_ids')
+
+#-----------------------------------------------------------------------------
+# Feature extraction
+
+
+def extract_hero_role():
+    """
+    An array [n_heros x n_roles] with 1's if that hero is that role.
+
+
+    Notes
+    -----
+    I'm creating role_id to be an int from the roles in
+
+        roles = set(list(chain(*api._hero_roles.values())))
+
+    """
+    # need to persist this to disk I think.
+    # then update as neeeded.
+    by_hero = a._hero_roles
+    all_heroes = sorted(a._hero_names_to_id.keys())
+    n_heros = len(all_heroes)
+    roles = sorted(set(list(chain(*by_hero.values()))))
+    n_roles = len(roles)
+
+    df = pd.DataFrame(np.zeros(shape=(n_heros, n_roles)),
+                      index=all_heroes,
+                      columns=roles)
+
+    for hero, hero_roles in by_hero.items():
+        for role in hero_roles:
+            df.loc[hero, role] = 1
+    return df
