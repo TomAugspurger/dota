@@ -35,6 +35,8 @@ def add_by_side(df, dr, item, side):
 
 
 def append_to_store(store, dfs, key='drs'):
+    if dfs == []:
+        return None
     dfs = pd.concat(dfs, ignore_index=True)
 
     # will be float if any NaN. Some won't have
@@ -78,13 +80,14 @@ def main():
     with pd.get_store(store) as s:
 
         try:
-            stored = s.select('drs')['match_id']
+            stored = s.select('drs')['match_id'].unique()
         except KeyError:
             stored = []
 
-    new_games = filter(lambda x: x.stem not in stored, cached)
+    new_games = filter(lambda x: int(x.stem) not in stored, cached)
 
     dfs = []
+    i = 0  # if no new games
     for i, game in enumerate(new_games, 1):
         dr = api.DetailsResponse.from_json(str(game))
         dfs.append(format_df(dr))
