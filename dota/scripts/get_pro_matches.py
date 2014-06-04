@@ -11,6 +11,39 @@ from dota import api
 from dota.helpers import cached_games
 
 
+def get_all_match_ids():
+    """
+    For catching up to datdota.
+    """
+    past_matches = 0
+    while True:
+        matches = get_match_ids(past_matches=past_matches)
+        matches = list(matches)
+        if matches:
+            yield matches
+            past_matches += 500
+        else:
+            raise StopIteration
+
+
+def get_match_ids(past_matches=None):
+    """
+    Maybe str -> iterable str
+    """
+    url = "http://www.datdota.com/matches.php"
+    if past_matches:
+        url += "?l0={}".format(past_matches)
+    r = html.parse(url).getroot()
+
+    reg = re.compile(r'match.*(\d{9})$')
+    links = filter(lambda x: reg.match(x[2]), r.iterlinks())
+    yield from links
+
+
+def parse_id_from_link(link):
+    return link[2].split('?q=')[-1] + '\n'
+
+
 def fetch_new_match_ids(match_ids_path):
     """
     Get new match ids from datdota.
@@ -30,16 +63,12 @@ def fetch_new_match_ids(match_ids_path):
 
     id_store should be like '578918710\n'
     """
-    url = "http://www.datdota.com/matches.php"
-    r = html.parse(url).getroot()
-
-    reg = re.compile(r'match.*(\d{9})$')
-    links = filter(lambda x: reg.match(x[2]), r.iterlinks())
+    links = get_match_ids()
 
     with match_ids_path.open() as f:
         old_ids = f.readlines()
 
-    ids = (x[2].split('?q=')[-1] + '\n' for x in links)
+    ids = map(parse_id_from_link, links)
     new_ids = [x for x in ids if x not in old_ids]
     return new_ids
 
